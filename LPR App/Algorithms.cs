@@ -8,30 +8,71 @@ namespace LPR_App
 {
     internal class Algorithms
     {
+        public static void displayTableau(double[,] tableau, int numberOfVariables, int numberOfConstraints)
+        {
+            for (int i = 0; i < numberOfConstraints-1; i++)
+            {
+                Console.Write($"x{i + 1} \t");
+            }
+            int s = 1;
+            for (int i = numberOfConstraints; i < numberOfConstraints + numberOfVariables+1; i++)
+            {
+                Console.Write($"s{s} \t");
+                s++;
+            }
+            Console.WriteLine("RHS");
+            for (int i = 0; i < numberOfVariables + 2; i++)
+            {
+                for (int j = 0; j < numberOfConstraints + numberOfVariables + 1; j++)
+                {
+                    Console.Write(tableau[i, j] + " \t");
+                }
+                Console.WriteLine("");
+            }
+        }
+
+        public static void displayTableau(double[,] tableau, int numberOfVariables, int numberOfConstraints,String name)
+        {
+            for(int i = 0; i < name.Length; i++)
+            {
+                Console.Write($"-");
+            }
+            Console.WriteLine();
+            Console.WriteLine(name);
+            for (int i = 0; i < name.Length; i++)
+            {
+                Console.Write($"-");
+            }
+            Console.WriteLine();
+            for (int i = 0; i < numberOfConstraints - 1; i++)
+            {
+                Console.Write($"x{i + 1} \t");
+            }
+            int s = 1;
+            for (int i = numberOfConstraints; i < numberOfConstraints + numberOfVariables + 1; i++)
+            {
+                Console.Write($"s{s} \t");
+                s++;
+            }
+            Console.WriteLine("RHS");
+            for (int i = 0; i < numberOfVariables + 2; i++)
+            {
+                for (int j = 0; j < numberOfConstraints + numberOfVariables + 1; j++)
+                {
+                    Console.Write(tableau[i, j] + " \t");
+                }
+                Console.WriteLine("");
+            }
+        }
         public static double[,] PrimalSimplex(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
         {
             int numberOfConstraints = RHS.Length;
             int numberOfVariables = stCoefficients.Length;
 
             //Initialize tableau
-            double[,] tableau = new double[numberOfConstraints + 1, numberOfVariables + numberOfConstraints + 1];//2D array with number of constraints rows and number of variables + number of constraints(slack variables) columns
+            double[,] tableau = canonicalForm(constraintMatrix,RHS,stCoefficients);
 
-            //Objective Function Row
-            for (int j = 0; j < numberOfVariables; j++)
-            {
-                tableau[0, j] = -stCoefficients[j];//make the z row variables negative
-            }
-
-            //Constraint Rows
-            for (int i = 0; i < numberOfConstraints; i++)
-            {
-                for (int j = 0; j < numberOfVariables; j++)
-                {
-                    tableau[i + 1, j] = constraintMatrix[i, j];//put the constraint matrix values in the tableau row by row
-                }
-                tableau[i + 1, numberOfVariables + i] = 1; //Slack Variables
-                tableau[i + 1, numberOfVariables + numberOfConstraints] = RHS[i];//RHS values
-            }
+            displayTableau(tableau, numberOfVariables, numberOfConstraints, "Canonical Form:");
 
             while (true)
             {
@@ -100,6 +141,34 @@ namespace LPR_App
            
             return tableau;
 
+        }
+
+        private static double[,] canonicalForm(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
+        {
+            int numberOfConstraints = RHS.Length;
+            int numberOfVariables = stCoefficients.Length;
+
+            //Initialize tableau
+            double[,] tableau = new double[numberOfConstraints + 1, numberOfVariables + numberOfConstraints + 1];//2D array with number of constraints rows and number of variables + number of constraints(slack variables) columns
+
+            //Objective Function Row
+            for (int j = 0; j < numberOfVariables; j++)
+            {
+                tableau[0, j] = -stCoefficients[j];//make the z row variables negative
+            }
+
+            //Constraint Rows
+            for (int i = 0; i < numberOfConstraints; i++)
+            {
+                for (int j = 0; j < numberOfVariables; j++)
+                {
+                    tableau[i + 1, j] = constraintMatrix[i, j];//put the constraint matrix values in the tableau row by row
+                }
+                tableau[i + 1, numberOfVariables + i] = 1; //Slack Variables
+                tableau[i + 1, numberOfVariables + numberOfConstraints] = RHS[i];//RHS values
+            }
+
+            return tableau;
         }
 
         public static void RevisedPrimalSimplex(string[] objFunc, string[] constraints, string[] restrictions, double[] basicVariables)
