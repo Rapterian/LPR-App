@@ -8,6 +8,12 @@ namespace LPR_App
 {
     internal class Algorithms
     {
+        /// <summary>
+        /// This function will display the tableau in the console whithout the name
+        /// </summary>
+        /// <param name="tableau"></param>
+        /// <param name="numberOfVariables"></param>
+        /// <param name="numberOfConstraints"></param>
         public static void displayTableau(double[,] tableau, int numberOfVariables, int numberOfConstraints)
         {
             for (int i = 0; i < numberOfConstraints-1; i++)
@@ -31,6 +37,13 @@ namespace LPR_App
             }
         }
 
+        /// <summary>
+        /// This function will display the tableau in the console with the name
+        /// </summary>
+        /// <param name="tableau"></param>
+        /// <param name="numberOfVariables"></param>
+        /// <param name="numberOfConstraints"></param>
+        /// <param name="name"></param>
         public static void displayTableau(double[,] tableau, int numberOfVariables, int numberOfConstraints,String name)
         {
             for(int i = 0; i < name.Length; i++)
@@ -64,6 +77,15 @@ namespace LPR_App
                 Console.WriteLine("");
             }
         }
+
+        /// <summary>
+        /// This function will perform the primal simplex algorithm on the given tableau
+        /// </summary>
+        /// <param name="constraintMatrix"></param>
+        /// <param name="RHS"></param>
+        /// <param name="stCoefficients"></param>
+        /// <returns>Solved Tablue</returns>
+        /// <exception cref="Exception"></exception>
         public static double[,] PrimalSimplex(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
         {
             int numberOfConstraints = RHS.Length;
@@ -143,6 +165,13 @@ namespace LPR_App
 
         }
 
+        /// <summary>
+        /// This function will convert the given input into canonical form
+        /// </summary>
+        /// <param name="constraintMatrix"></param>
+        /// <param name="RHS"></param>
+        /// <param name="stCoefficients"></param>
+        /// <returns>canonical form</returns>
         private static double[,] canonicalForm(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
         {
             int numberOfConstraints = RHS.Length;
