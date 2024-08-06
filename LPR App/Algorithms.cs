@@ -8,7 +8,7 @@ namespace LPR_App
 {
     internal class Algorithms
     {
-        public static double[] PrimalSimplex(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
+        public static double[,] PrimalSimplex(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
         {
             int numberOfConstraints = RHS.Length;
             int numberOfVariables = stCoefficients.Length;
@@ -97,21 +97,8 @@ namespace LPR_App
                 }
             }
 
-            double[] solution = new double[numberOfVariables + 1];
-
-            for (int i = 1; i < numberOfConstraints + 1; i++)
-            {
-                for (int j = 0; j < numberOfVariables; j++)
-                {
-                    if (tableau[i, j] == 1)
-                    {
-                        solution[j] = tableau[i, numberOfVariables + numberOfConstraints];
-                        break;
-                    }
-                }
-            }
-            solution[numberOfVariables] = tableau[0, numberOfVariables + numberOfConstraints];
-            return solution;
+           
+            return tableau;
 
         }
 

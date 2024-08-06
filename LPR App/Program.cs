@@ -13,25 +13,29 @@ double[,] A = {
 double[] b = { 4, 5, 6 };
 double[] c = { 3, 2 };
 
-double[] solution = Algorithms.PrimalSimplex(A, b, c);
+double[,] solution = Algorithms.PrimalSimplex(A, b, c);
 
 Console.WriteLine("Optimal solution:");
-for (int i = 0; i < solution.Length - 1; i++)
+for (int i = 0; i < c.Length; i++)
 {
-    Console.WriteLine($"x{i + 1} = {solution[i]}");
+    Console.Write($"x{i + 1} \t");
 }
-Console.WriteLine($"Z = {solution[solution.Length - 1]}");
+int s = 1;
+for (int i = c.Length; i < c.Length + b.Length; i++)
+{
+    Console.Write($"s{s} \t");
+    s++;
+}
+Console.WriteLine("RHS");
+for (int i = 0; i < b.Length + 1; i++)
+{
+    for (int j = 0; j < c.Length + b.Length + 1; j++)
+    {
+        Console.Write(solution[i, j] + " \t");
+    }
+    Console.WriteLine("");
+}
 
-//
-
-
-//Revised Primal Simplex 
-string[] objFunc = "max +2 +3 +3 +5 +2 +4".Split(' ');
-string[] constraints = "+11 +8 +6 +14 +10 +10 <=40".Split(' ');
-string[] restrictions = "bin bin bin bin bin bin".Split(' ');
-double[] basicVariables = { };
-
-Algorithms.RevisedPrimalSimplex(objFunc, constraints, restrictions, basicVariables);
 //
 
 
