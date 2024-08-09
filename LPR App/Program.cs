@@ -19,6 +19,7 @@ Algorithms.displayTableau(solution, c.Length, b.Length,"Optimal Solution:");
 
 
 
+Algorithms.CuttingPlane(A, b, c, c.Length, b.Length, "Primal Simplex Optimal Solution:");
 
 
 
