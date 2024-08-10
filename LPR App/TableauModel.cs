@@ -6,14 +6,39 @@ using System.Threading.Tasks;
 
 namespace LPR_App
 {
-    public class MatrixModel
+    public class TableauModel
     {
         public double[,] ConstraintMatrix { get; set; }
         public double[] RightHandSide { get; set; }
         public double[] ObjectiveFunction { get; set; }
 
-        public MatrixModel(double[,] constraintMatrix, double[] rightHandSide, double[] objectiveFunction)
+        public TableauModel(double[,] constraintMatrix, double[] rightHandSide, double[] objectiveFunction)
         {
+            ConstraintMatrix = constraintMatrix;
+            RightHandSide = rightHandSide;
+            ObjectiveFunction = objectiveFunction;
+        }
+
+        public TableauModel(double[,] matrix,int numberOfVariables,int numberOfConstraints)
+        {
+            double[,] constraintMatrix = new double[numberOfConstraints, numberOfVariables];
+            double[] objectiveFunction = new double[numberOfVariables];
+            double[] rightHandSide = new double[numberOfConstraints + 1];
+            for (int i = 0; i < numberOfConstraints+ 1; i++) 
+            {
+                rightHandSide[i] = matrix[i, numberOfVariables + numberOfConstraints];
+            }
+            for (int i = 0; i < numberOfVariables; i++)
+            {
+                objectiveFunction[i] = matrix[0, i];
+            }
+            for (int i = 0; i < numberOfConstraints; i++)
+            {
+                for (int j = 0; j < numberOfVariables; j++)
+                {
+                    constraintMatrix[i, j] = matrix[i + 1, j];
+                }
+            }
             ConstraintMatrix = constraintMatrix;
             RightHandSide = rightHandSide;
             ObjectiveFunction = objectiveFunction;
@@ -21,7 +46,7 @@ namespace LPR_App
 
         public int NumberOfVariables => ObjectiveFunction?.Length ?? 0;
 
-        public int NumberOfConstraints => RightHandSide?.Length ?? 0;
+        public int NumberOfConstraints => RightHandSide?.Length-1 ?? 0;
     
         public double[,] CanonicalForm()
         {
@@ -34,6 +59,8 @@ namespace LPR_App
                 tableau[0, j] = -ObjectiveFunction[j];//make the z row variables negative
             }
 
+            tableau[0, NumberOfVariables + NumberOfConstraints] = RightHandSide[0];//Objective Function Row RHS
+
             //Constraint Rows
             for (int i = 0; i < NumberOfConstraints; i++)
             {
@@ -42,7 +69,7 @@ namespace LPR_App
                     tableau[i + 1, j] = ConstraintMatrix[i, j];//put the constraint matrix values in the tableau row by row
                 }
                 tableau[i + 1, NumberOfVariables + i] = 1; //Slack Variables
-                tableau[i + 1, NumberOfVariables + NumberOfConstraints] = RightHandSide[i];//RHS values
+                tableau[i +1, NumberOfVariables + NumberOfConstraints] = RightHandSide[i+1];//RHS values
             }
 
             return tableau;
@@ -55,7 +82,7 @@ namespace LPR_App
         /// <param name="numberOfVariables"></param>
         /// <param name="numberOfConstraints"></param>
         /// <param name="name"></param>
-        public void ToString(String name)
+        public void ToConsole(String name)
         {
             for (int i = 0; i < name.Length; i++)
             {
@@ -81,7 +108,7 @@ namespace LPR_App
             Console.WriteLine("RHS");
             for (int i = 0; i < NumberOfVariables + 2; i++)
             {
-                for (int j = 0; j < NumberOfConstraints + NumberOfVariables + 1; j++)
+                for (int j = 0; j < NumberOfConstraints + NumberOfVariables+1; j++)
                 {
                     Console.Write(CanonicalForm()[i, j] + " \t");
                 }
@@ -89,9 +116,9 @@ namespace LPR_App
             }
         }
 
-        public void ToString()
+        public void ToConsole()
         {
-            ToString("");
+            ToConsole("");
         }
     }
 }
