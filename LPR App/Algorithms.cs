@@ -283,42 +283,7 @@ namespace LPR_App
 
         public static void RevisedPrimalSimplex(string[] objFunc, string[] constraints, string[] restrictions, double[] basicVariables)
         {
-            Console.WriteLine("Canonical Form:");
-
-            foreach (string coefficent in objFunc)
-            {
-                Console.WriteLine("Original ->" + coefficent);
-                if (coefficent.StartsWith("+"))
-                {
-                    Console.WriteLine("Replaced with ->" + coefficent.Replace('+', '-'));
-                }
-
-                else if (coefficent.StartsWith("-"))
-                {
-                    Console.Write(coefficent.Replace('-', '+'));
-                }
-
-            }
-
-            Console.WriteLine();
-
-
-
-
-
-
-            /*  BV (row)
-             *  Xbv (coloumn)
-             *  NBV (row)
-             *  Xnbv (column)
-             *  Co-efficents of BV (row)
-             *  Co-efficents of NBV (row)
-             *  Matrix of columns for Basic variables
-             *  Matrix of columns for Non-basic variables
-             *  RHS values
-             *  
-             *  6 formulas
-           */
+            //Caitlin
         }
 
         void BranchBoundSimplex()
@@ -331,9 +296,75 @@ namespace LPR_App
             //Johannes
         }
 
-        void CuttingPlane()
-        {
-            //Caitlin
+        public static double[,] getXValues(double[,] tableau, int numVariables)
+        { //returns a matrix with column number (correlates to x-subscript) and variable value)
+            int rows = tableau.GetLength(0);
+            int columns = tableau.GetLength(1);
+            int rhsColumn = columns - 1;
+
+            double[,] result = new double[numVariables, 2];
+
+            for (int j = 0; j < numVariables; j++) {
+                int oneCount = 0;
+                double valueInLastColumn = 0;
+
+                //checking if BV
+                for (int i = 0; i < rows; i++) {
+                    if (tableau[i, j] == 1) {
+                        oneCount++;
+                        valueInLastColumn = tableau[i, rhsColumn];
+                    }
+                }
+
+                //if BV then updates result matrix with RHS value in the same row
+                if (oneCount == 1) {
+                    result[j, 0] = j + 1;
+                    result[j, 1] = valueInLastColumn; 
+                } else { //otherwise, updates result matrix with 0 as variable value
+                    result[j, 0] = 0;
+                    result[j, 1] = 0;
+                }
+            }
+
+            return result;
+        }
+
+        public static void CuttingPlane(double[,] constraintMatrix, double[] RHS, double[] stCoefficients, int numberOfVariables, int numberOfConstraints, String name)
+        { //performs cutting plane simplex algorithm
+            double[,] primalSolution = Algorithms.PrimalSimplex(constraintMatrix, RHS, stCoefficients);
+            Console.WriteLine();
+            Algorithms.displayTableau(primalSolution, stCoefficients.Length, RHS.Length, "Primal Simplex Optimal Solution:");
+
+            //linking variables with values primal simplex optimal values
+            double[,] variableAnswers = getXValues(primalSolution, numberOfVariables);
+
+            //checking if primal simplex solution already has x-values that are all integers
+            bool allIntegers = true;
+            for (int i = 0; i < variableAnswers.GetLength(0); i++) {
+                if (variableAnswers[i, 1] != Math.Floor(variableAnswers[i, 1])) {
+                    allIntegers = false;
+                    break;
+                }
+            }
+
+            if (allIntegers) {
+                Console.WriteLine("The Primal Simplex optimal values are all integers, therefore there is no need to continue with the Cutting Plane Simplex Algorithm.");
+            } else {
+                double closestToHalf = double.MaxValue;
+                double closestValue = 0;
+
+                for (int i = 0; i < variableAnswers.GetLength(0); i++) {
+                    double decimalPart = variableAnswers[i, 1] - Math.Floor(variableAnswers[i, 1]);
+                    double difference = Math.Abs(decimalPart - 0.5);
+
+                    if (difference < closestToHalf) {
+                        closestToHalf = difference;
+                        closestValue = variableAnswers[i, 1];
+                    }
+                }
+                Console.WriteLine();
+                Console.WriteLine("Selected value to force as an integer is " + closestValue);
+            }
         }
 
         void SensitivityAnalysis()
