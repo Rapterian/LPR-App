@@ -295,47 +295,109 @@ namespace LPR_App
         }
 
         /// <summary>
-        /// This function will identify which row to extract values from to create the new constraint
+        /// This function will link x-variables with their respective RHS values and constraint rows
         /// </summary>
         /// <param name="tableau"></param>
         /// <param name="numVariables"></param>
         /// <param name="solution"></param>
-        /// <returns>matrix with column number (correlates to x-subscript) and variable value</returns>
+        /// <returns>matrix with x-variable, row number and variable value</returns>
         public static double[,] GetXValues(TableauModel tableau, int numVariables, double[,] solution)
         {
             int rows = solution.GetLength(0);
             int columns = solution.GetLength(1);
             int rhsColumn = columns - 1;
 
-            double[,] result = new double[numVariables, 2];
+            double[,] result = new double[numVariables, 3]; //column 1: x-variable; column 2: RHS value; column 3: constraint row
 
-            for (int j = 0; j < numVariables; j++) {
+            for (int j = 0; j < numVariables; j++) 
+            {
                 int oneCount = 0;
                 double valueInLastColumn = 0;
+                int rowIndex = 0;
 
                 //checking if BV
-                for (int i = 0; i < rows; i++) {
-                    if (solution[i, j] == 1) {
+                for (int i = 0; i < rows; i++) 
+                {
+                    if (solution[i, j] == 1) 
+                    {
                         oneCount++;
+                        rowIndex = i;
                         valueInLastColumn = solution[i, rhsColumn];
                     }
                 }
 
                 //if BV then updates result matrix with RHS value in the same row
-                if (oneCount == 1) {
+                if (oneCount == 1) 
+                {
                     result[j, 0] = j + 1;
-                    result[j, 1] = valueInLastColumn; 
-                } else { //otherwise, updates result matrix with 0 as variable value
-                    result[j, 0] = 0;
+                    result[j, 1] = valueInLastColumn;
+                    result[j, 2] = rowIndex + 1;
+                } 
+                else 
+                { //otherwise, updates result matrix with 0 as variable value
+                    result[j, 0] = j + 1;
                     result[j, 1] = 0;
+                    result[j, 2] = rowIndex + 1;
                 }
             }
 
             return result;
         }
 
+        ///<summary>
+        /// This function will check if all x-variables already have integer answers
+        /// </summary>
+        /// <param name="RHS"></param>
+        /// <returns>boolean value which indicates if all answers are already integers or not</returns>
+        public static bool AllIntegers(double[,] RHS)
+        {
+            bool result = true;
+            for (int i = 0; i < RHS.GetLength(0); i++)
+            {
+                if (RHS[i, 1] != Math.Floor(RHS[i, 1]))
+                {
+                    result = false;
+                    break;
+                }
+            }
+
+            return result;
+        }
+
+        ///<summary>
+        /// This function will select the constraint row with the value closest to ,5
+        /// </summary>
+        /// <param name="answers"></param>
+        /// <returns>constraint row used to make new constraint</returns>
+        public static double SelectConstraint(double[,] answers)
+        {
+            double closestToHalf = double.MaxValue;
+            double constraintRow = 0;
+
+            for (int i = 0; i < answers.GetLength(0); i++)
+            {
+                double decimalPart = answers[i, 1] - Math.Floor(answers[i, 1]);
+                double difference = Math.Abs(decimalPart - 0.5);
+
+                if (difference < closestToHalf)
+                {
+                    closestToHalf = difference;
+                    constraintRow = answers[i, 2];
+                }
+            }
+
+            return constraintRow;
+        }
+
+        ///<summary>
+        /// This function will perform the cutting plane simplex algorithm
+        /// </summary>
+        /// <param name="constraintMatrix"></param>
+        /// <param name="RHS"></param>
+        /// <param name="stCoefficients"></param>
+        /// <returns></returns>
         public static void CuttingPlane(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
-        { //performs cutting plane simplex algorithm
+        { 
             Console.WriteLine("You've selected to solve with the Cutting Plane Simplex Algorithm...");
             Console.WriteLine("First, we must find the optimal values with the Primal Simplex Algorithm:");
 
@@ -344,52 +406,22 @@ namespace LPR_App
             model = Algorithms.PrimalSimplex(model);
             model.ToConsole("Primal Simplex Optimal Solution:");
 
-            //double[,] optimalConstraints = model.ConstraintMatrix;
-            //double[] optimalRHS = model.RightHandSide;
-            //double[] optimalCoefficents = model.ObjectiveFunction;
-
             double[,] primalOptimal = model.CanonicalForm();
-
-            //double[,] primalSolution = Algorithms.PrimalSimplex(constraintMatrix, RHS, stCoefficients);
-            //Console.WriteLine();
-            //Algorithms.displayTableau(primalSolution, stCoefficients.Length, RHS.Length, "Primal Simplex Optimal Solution:");
 
             //linking variables with values primal simplex optimal values
             double[,] variableAnswers = GetXValues(model, stCoefficients.Length, primalOptimal);
 
-            ////checking if primal simplex solution already has x-values that are all integers
-            bool allIntegers = true;
-            for (int i = 0; i < variableAnswers.GetLength(0); i++)
-            {
-                if (variableAnswers[i, 1] != Math.Floor(variableAnswers[i, 1]))
-                {
-                    allIntegers = false;
-                    break;
-                }
-            }
-
+            //checking if primal simplex solution already has x-values that are all integers
+            bool allIntegers = AllIntegers(variableAnswers);
             if (allIntegers)
             {
                 Console.WriteLine("The Primal Simplex optimal values are all integers, therefore there is no need to continue with the Cutting Plane Simplex Algorithm.");
             }
             else
             {
-                double closestToHalf = double.MaxValue;
-                double closestValue = 0;
-
-                for (int i = 0; i < variableAnswers.GetLength(0); i++)
-                {
-                    double decimalPart = variableAnswers[i, 1] - Math.Floor(variableAnswers[i, 1]);
-                    double difference = Math.Abs(decimalPart - 0.5);
-
-                    if (difference < closestToHalf)
-                    {
-                        closestToHalf = difference;
-                        closestValue = variableAnswers[i, 1];
-                    }
-                }
+                double selectedConstraint = SelectConstraint(variableAnswers);
                 Console.WriteLine();
-                Console.WriteLine("Selected value to force as an integer is " + closestValue);
+                Console.WriteLine("We will select constraint " + selectedConstraint);
             }
         }
 

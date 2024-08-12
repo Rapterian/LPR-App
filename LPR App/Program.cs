@@ -22,6 +22,8 @@ model = Algorithms.PrimalSimplex(model);
 model.ToConsole("Optimal Solution:");
 
 
+
+
 Algorithms.CuttingPlane(A, b, c);
 
 
