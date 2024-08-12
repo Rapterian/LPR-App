@@ -382,7 +382,7 @@ namespace LPR_App
                 if (difference < closestToHalf)
                 {
                     closestToHalf = difference;
-                    constraintRow = answers[i, 2];
+                    constraintRow = answers[i, 2] - 1;
                 }
             }
 
