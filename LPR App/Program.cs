@@ -25,6 +25,10 @@ model.ToConsole("Optimal Solution:");
 //Cutting Plane Simplex
 Algorithms.CuttingPlane(A, b, c);
 
+double[] weight = { 12, 2, 1, 1, 4 };
+double[] value = { 4, 2, 2, 1, 10 };
+double weightLimit = 15;
 
+Algorithms.BranchBoundKnapsack(weight, value, weightLimit);
 
 Console.ReadLine();

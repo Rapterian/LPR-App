@@ -107,7 +107,7 @@ namespace LPR_App
                 s++;
             }
             Console.WriteLine("RHS");
-            for (int i = 0; i < NumberOfVariables + 2; i++)
+            for (int i = 0; i < NumberOfVariables + 1; i++)
             {
                 for (int j = 0; j < NumberOfConstraints + NumberOfVariables+1; j++)
                 {
