@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LPR_App
 {
-    public class Algorithms
+    internal class Algorithms
     {
         /// <summary>
         /// This function will display the tableau in the console whithout the name
@@ -16,12 +16,12 @@ namespace LPR_App
         /// <param name="numberOfConstraints"></param>
         public static void displayTableau(double[,] tableau, int numberOfVariables, int numberOfConstraints)
         {
-            for (int i = 0; i < numberOfConstraints - 1; i++)
+            for (int i = 0; i < numberOfConstraints-1; i++)
             {
                 Console.Write($"x{i + 1} \t");
             }
             int s = 1;
-            for (int i = numberOfConstraints; i < numberOfConstraints + numberOfVariables + 1; i++)
+            for (int i = numberOfConstraints; i < numberOfConstraints + numberOfVariables+1; i++)
             {
                 Console.Write($"s{s} \t");
                 s++;
@@ -44,9 +44,9 @@ namespace LPR_App
         /// <param name="numberOfVariables"></param>
         /// <param name="numberOfConstraints"></param>
         /// <param name="name"></param>
-        public static void displayTableau(double[,] tableau, int numberOfVariables, int numberOfConstraints, String name)
+        public static void displayTableau(double[,] tableau, int numberOfVariables, int numberOfConstraints,String name)
         {
-            for (int i = 0; i < name.Length; i++)
+            for(int i = 0; i < name.Length; i++)
             {
                 Console.Write($"-");
             }
@@ -88,11 +88,11 @@ namespace LPR_App
         /// <exception cref="Exception"></exception>
         public static double[,] PrimalSimplex(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
         {
-            int numberOfConstraints = RHS.Length - 1;
+            int numberOfConstraints = RHS.Length-1;
             int numberOfVariables = stCoefficients.Length;
 
             //Initialize tableau
-            double[,] tableau = canonicalForm(constraintMatrix, RHS, stCoefficients);
+            double[,] tableau = canonicalForm(constraintMatrix,RHS,stCoefficients);
 
             displayTableau(tableau, numberOfVariables, numberOfConstraints, "Canonical Form:");
 
@@ -160,7 +160,7 @@ namespace LPR_App
                 }
             }
 
-
+           
             return tableau;
 
         }
@@ -238,7 +238,7 @@ namespace LPR_App
 
             TableauModel tableauModel = new TableauModel(tableauC, numberOfVariables, numberOfConstraints);
 
-
+            
 
             return tableauModel;
 
@@ -253,7 +253,7 @@ namespace LPR_App
         /// <returns>canonical form</returns>
         private static double[,] canonicalForm(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
         {
-            int numberOfConstraints = RHS.Length - 1;
+            int numberOfConstraints = RHS.Length-1;
             int numberOfVariables = stCoefficients.Length;
 
             //Initialize tableau
@@ -326,170 +326,10 @@ namespace LPR_App
             //Caitlin
         }
 
-        public static void BranchBoundKnapsack(double[] value, double[] weight, double weightLimit)
+        void BranchBoundKnapsack()
         {
-
             //Johannes
-            Dictionary<List<BranchAndBoundItemModel>, bool> branches = new Dictionary<List<BranchAndBoundItemModel>, bool>();
-
-            List<BranchAndBoundItemModel> items = new List<BranchAndBoundItemModel>();
-
-            for (int i = 0; i < value.Length; i++)
-            {
-                items.Add(new BranchAndBoundItemModel { Value = value[i], Weight = weight[i], Ratio = value[i] / weight[i], Name = $"X {i + 1}" });
-            }
-
-            branches.Add(items, false);
-           
-            while (true)
-            {
-                int unsolvedCounters = 0;
-                foreach(var branch in branches)
-                {
-                    if(branch.Value == false)
-                    {
-                        unsolvedCounters++;
-                        break;
-                    }
-                }
-                if (unsolvedCounters == 0)
-                {
-                    break;
-                }
-
-                List<List<BranchAndBoundItemModel>> keys = new List<List<BranchAndBoundItemModel>>(branches.Keys);
-
-                Dictionary<List<BranchAndBoundItemModel>, bool> branchesWithSubProblems = branches;
-
-                for (int i = 0; i < keys.Count; i++)
-                {
-                    var key = keys[i];
-                    if (branches[key] == false)
-                    {
-                        List<BranchAndBoundItemModel> parentBranch = solveBranch(key, weightLimit);
-
-                      
-
-                        foreach (var item in parentBranch)
-                        {
-                            if (item.IsSelected != 0 && item.IsSelected != 1)
-                            {
-                                branchesWithSubProblems = addSubBracnhes(branchesWithSubProblems, parentBranch);
-                            }
-                        }
-                        branches[key] = true; 
-                    }
-                }
-
-                branches = branchesWithSubProblems;
-            }
-
         }
-
-        private static List<BranchAndBoundItemModel> solveBranch(List<BranchAndBoundItemModel> items, double weightLimit)
-        {
-            List<BranchAndBoundItemModel> locked = new List<BranchAndBoundItemModel>();
-            List<BranchAndBoundItemModel> result = new List<BranchAndBoundItemModel>();
-            foreach (BranchAndBoundItemModel item in items)
-            {
-                result.Add(new BranchAndBoundItemModel { Value = item.Value, Weight = item.Weight, Ratio = item.Ratio, Name = item.Name, IsSelected = item.IsSelected, Locked = item.Locked });
-            }
-
-            bool hasSubProblem = false;
-            foreach (BranchAndBoundItemModel i in result)
-            {
-                if (i.Locked)
-                {
-                    locked.Add(i);
-                    weightLimit -= i.Weight * i.IsSelected;
-                }
-            }
-            foreach (BranchAndBoundItemModel i in locked)
-            {
-                result.Remove(i);
-            }
-
-            result = result.OrderByDescending(x => x.Ratio).ToList();
-
-            foreach (BranchAndBoundItemModel item in result)
-            {
-                item.IsSelected = 0;
-            }
-
-            foreach (BranchAndBoundItemModel item in result)
-            {
-                if (weightLimit - item.Weight > 0)
-                {
-                    weightLimit -= item.Weight;
-                    item.IsSelected = 1;
-                }
-                else
-                {
-                    item.IsSelected = weightLimit / item.Weight;
-                    hasSubProblem = true;
-                    break;
-                }
-            }
-
-            result.AddRange(locked);
-
-            if (!hasSubProblem)
-            {
-                double totalValue = 0;
-                foreach (BranchAndBoundItemModel item in result)
-                {
-                    totalValue += item.IsSelected * item.Value;
-                }
-                Console.WriteLine($"Candidate solution:" + totalValue);
-            }
-
-            
-            return result;
-        }
-
-        private static Dictionary<List<BranchAndBoundItemModel>, bool> addSubBracnhes(Dictionary<List<BranchAndBoundItemModel>, bool> branches, List<BranchAndBoundItemModel> parentBracnh)
-        {
-            List<BranchAndBoundItemModel> subProblem1 = new List<BranchAndBoundItemModel>();
-            List<BranchAndBoundItemModel> subProblem2 = new List<BranchAndBoundItemModel>();
-
-            foreach (BranchAndBoundItemModel item in parentBracnh)
-            {
-                subProblem1.Add(new BranchAndBoundItemModel { Value = item.Value, Weight = item.Weight, Ratio = item.Ratio, Name = item.Name, IsSelected = item.IsSelected, Locked = item.Locked });
-                subProblem2.Add(new BranchAndBoundItemModel { Value = item.Value, Weight = item.Weight, Ratio = item.Ratio, Name = item.Name, IsSelected = item.IsSelected, Locked = item.Locked });
-            }
-
-            foreach (BranchAndBoundItemModel item in subProblem1)
-            {
-                if (item.IsSelected != 0 && item.IsSelected != 1)
-                {
-                    item.IsSelected = 0;
-                    item.Locked = true;
-                }
-            }
-
-            foreach (BranchAndBoundItemModel item in subProblem2)
-            {
-                if (item.IsSelected != 0 && item.IsSelected != 1)
-                {
-                    item.IsSelected = 1;
-                    item.Locked = true;
-                }
-            }
-
-            if (!branches.ContainsKey(subProblem1))
-            {
-                branches.Add(subProblem1, false);
-            }
-            if (!branches.ContainsKey(subProblem2))
-            {
-                branches.Add(subProblem2, false);
-            }
-            
-            branches[parentBracnh] = true;
-            
-            return branches;
-        }
-
 
         void CuttingPlane()
         {

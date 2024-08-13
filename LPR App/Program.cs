@@ -26,10 +26,7 @@ model=Algorithms.PrimalSimplex(model);
 model.ToConsole("Optimal Solution:");
 
 
-double[] weight = { 12, 2, 1, 1, 4 };
-double[] value = { 4, 2, 2, 1, 10 };
-double weightLimit = 15;
-
-Algorithms.BranchBoundKnapsack(weight, value, weightLimit);
 
 
+
+Console.ReadLine();
