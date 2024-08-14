@@ -13,7 +13,7 @@ namespace LPR_App
         {
             int numberOfConstraints = tableau.NumberOfConstraints;
             int numberOfVariables = tableau.NumberOfVariables;
-            double[,] tableauC = tableau.CanonicalForm();
+            double[,] tableauC = tableau.CanonicalForm(true);
 
             while (true)
             {
@@ -395,11 +395,11 @@ namespace LPR_App
             Console.WriteLine("First, we must find the optimal values with the Primal Simplex Algorithm:");
 
             TableauModel model = new TableauModel(constraintMatrix, RHS, stCoefficients);
-            model.ToConsole();
+            model.ToConsole("Initial Tableau",true);
             model = Algorithms.PrimalSimplex(model);
-            model.ToConsole("Primal Simplex Optimal Solution:");
+            model.ToConsole("Primal Simplex Optimal Solution:",false);
 
-            double[,] primalOptimal = model.CanonicalForm();
+            double[,] primalOptimal = model.CanonicalForm(false);
 
             //linking variables with values primal simplex optimal values
             double[,] variableAnswers = GetXValues(model, stCoefficients.Length, primalOptimal);

@@ -13,29 +13,35 @@ namespace LPR_App
         public double[] RightHandSide { get; set; }
         public double[] ObjectiveFunction { get; set; }
 
+        public int NumberOfVariables { get; set; }
+        public int NumberOfConstraints { get; set; }
+
+
         public TableauModel(double[,] constraintMatrix, double[] rightHandSide, double[] objectiveFunction)
         {
             ConstraintMatrix = constraintMatrix;
             RightHandSide = rightHandSide;
             ObjectiveFunction = objectiveFunction;
+            NumberOfVariables = ObjectiveFunction?.Length ?? 0;
+            NumberOfConstraints = RightHandSide?.Length - 1 ?? 0;
         }
 
-        public TableauModel(double[,] matrix,int numberOfVariables,int numberOfConstraints)
+        public TableauModel(double[,] matrix, int numberOfVariables, int numberOfConstraints)
         {
-            double[,] constraintMatrix = new double[numberOfConstraints, numberOfVariables];
-            double[] objectiveFunction = new double[numberOfVariables];
+            double[,] constraintMatrix = new double[numberOfConstraints + 1, numberOfVariables + numberOfConstraints + 1];
+            double[] objectiveFunction = new double[numberOfConstraints + numberOfVariables];
             double[] rightHandSide = new double[numberOfConstraints + 1];
-            for (int i = 0; i < numberOfConstraints+ 1; i++) 
+            for (int i = 0; i < numberOfConstraints + 1; i++)
             {
                 rightHandSide[i] = matrix[i, numberOfVariables + numberOfConstraints];
             }
-            for (int i = 0; i < numberOfVariables; i++)
+            for (int i = 0; i < numberOfVariables + numberOfConstraints; i++)
             {
                 objectiveFunction[i] = matrix[0, i];
             }
             for (int i = 0; i < numberOfConstraints; i++)
             {
-                for (int j = 0; j < numberOfVariables; j++)
+                for (int j = 0; j < numberOfVariables + numberOfConstraints; j++)
                 {
                     constraintMatrix[i, j] = matrix[i + 1, j];
                 }
@@ -43,34 +49,53 @@ namespace LPR_App
             ConstraintMatrix = constraintMatrix;
             RightHandSide = rightHandSide;
             ObjectiveFunction = objectiveFunction;
+            NumberOfVariables = numberOfVariables;
+            NumberOfConstraints = numberOfConstraints;
         }
 
-        public int NumberOfVariables => ObjectiveFunction?.Length ?? 0;
 
-        public int NumberOfConstraints => RightHandSide?.Length-1 ?? 0;
-    
-        public double[,] CanonicalForm()
+
+        public double[,] CanonicalForm(bool initialTableau)
         {
+
             //Initialize tableau
             double[,] tableau = new double[NumberOfConstraints + 1, NumberOfVariables + NumberOfConstraints + 1];//2D array with number of constraints rows and number of variables + number of constraints(slack variables) columns
 
-            //Objective Function Row
-            for (int j = 0; j < NumberOfVariables; j++)
+            if (initialTableau)
             {
-                tableau[0, j] = -ObjectiveFunction[j];//make the z row variables negative
-            }
-
-            tableau[0, NumberOfVariables + NumberOfConstraints] = RightHandSide[0];//Objective Function Row RHS
-
-            //Constraint Rows
-            for (int i = 0; i < NumberOfConstraints; i++)
-            {
+                //Objective Function Row
                 for (int j = 0; j < NumberOfVariables; j++)
                 {
-                    tableau[i + 1, j] = ConstraintMatrix[i, j];//put the constraint matrix values in the tableau row by row
+                    tableau[0, j] = -ObjectiveFunction[j];//make the z row variables negative
                 }
-                tableau[i + 1, NumberOfVariables + i] = 1; //Slack Variables
-                tableau[i +1, NumberOfVariables + NumberOfConstraints] = RightHandSide[i+1];//RHS values
+
+                tableau[0, NumberOfVariables + NumberOfConstraints] = RightHandSide[0];//Objective Function Row RHS
+
+                //Constraint Rows
+                for (int i = 0; i < NumberOfConstraints; i++)
+                {
+                    for (int j = 0; j < NumberOfVariables; j++)
+                    {
+                        tableau[i + 1, j] = ConstraintMatrix[i, j];//put the constraint matrix values in the tableau row by row
+                    }
+                    tableau[i + 1, NumberOfVariables + i] = 1; //Slack Variables
+                    tableau[i + 1, NumberOfVariables + NumberOfConstraints] = RightHandSide[i + 1];//RHS values
+                }
+            }
+            else
+            {
+                for (int i = 0; i < NumberOfConstraints + 1; i++)
+                {
+                    for (int j = 0; j < NumberOfConstraints + NumberOfVariables ; j++)
+                    {
+                        tableau[i, j] = ConstraintMatrix[i, j];
+                    }
+                    
+                }
+                for (int i = 0; i < NumberOfConstraints + 1; i++)
+                {
+                    tableau[i, NumberOfConstraints + NumberOfVariables] = RightHandSide[i];
+                }
             }
 
             return tableau;
@@ -83,7 +108,7 @@ namespace LPR_App
         /// <param name="numberOfVariables"></param>
         /// <param name="numberOfConstraints"></param>
         /// <param name="name"></param>
-        public void ToConsole(String name)
+        public void ToConsole(String name, bool initialTableau)
         {
             for (int i = 0; i < name.Length; i++)
             {
@@ -96,7 +121,7 @@ namespace LPR_App
                 Console.Write($"-");
             }
             Console.WriteLine();
-            for (int i = 0; i < NumberOfConstraints - 1; i++)
+            for (int i = 0; i < NumberOfVariables; i++)
             {
                 Console.Write($"x{i + 1} \t");
             }
@@ -107,19 +132,19 @@ namespace LPR_App
                 s++;
             }
             Console.WriteLine("RHS");
-            for (int i = 0; i < NumberOfVariables + 1; i++)
+            for (int i = 0; i < NumberOfConstraints + 1; i++)
             {
-                for (int j = 0; j < NumberOfConstraints + NumberOfVariables+1; j++)
+                for (int j = 0; j < NumberOfConstraints + NumberOfVariables + 1; j++)
                 {
-                    Console.Write(CanonicalForm()[i, j] + " \t");
+                    Console.Write(CanonicalForm(initialTableau)[i, j] + " \t");
                 }
                 Console.WriteLine("");
             }
         }
 
-        public void ToConsole()
+        public void ToConsole(bool initialTableau)
         {
-            ToConsole("");
+            ToConsole("", initialTableau);
         }
     }
 }
