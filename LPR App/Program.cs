@@ -1,8 +1,4 @@
-﻿//Atisang
-
-
-//Primal Simplex
-using LPR_App;
+﻿using LPR_App;
 
 double[,] A = {
                 { 1, 1 },
@@ -24,7 +20,5 @@ model.ToConsole("Optimal Solution:");
 
 //Cutting Plane Simplex
 Algorithms.CuttingPlane(A, b, c);
-
-
 
 Console.ReadLine();

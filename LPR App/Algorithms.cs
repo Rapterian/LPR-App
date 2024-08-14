@@ -8,164 +8,6 @@ namespace LPR_App
 {
     internal class Algorithms
     {
-        /// <summary>
-        /// This function will display the tableau in the console without the name
-        /// </summary>
-        /// <param name="tableau"></param>
-        /// <param name="numberOfVariables"></param>
-        /// <param name="numberOfConstraints"></param>
-        //public static void displayTableau(double[,] tableau, int numberOfVariables, int numberOfConstraints)
-        //{
-        //    for (int i = 0; i < numberOfConstraints-1; i++)
-        //    {
-        //        Console.Write($"x{i + 1} \t");
-        //    }
-        //    int s = 1;
-        //    for (int i = numberOfConstraints; i < numberOfConstraints + numberOfVariables+1; i++)
-        //    {
-        //        Console.Write($"s{s} \t");
-        //        s++;
-        //    }
-        //    Console.WriteLine("RHS");
-        //    for (int i = 0; i < numberOfVariables + 2; i++)
-        //    {
-        //        for (int j = 0; j < numberOfConstraints + numberOfVariables + 1; j++)
-        //        {
-        //            Console.Write(tableau[i, j] + " \t");
-        //        }
-        //        Console.WriteLine("");
-        //    }
-        //}
-
-        /// <summary>
-        /// This function will display the tableau in the console with the name
-        /// </summary>
-        /// <param name="tableau"></param>
-        /// <param name="numberOfVariables"></param>
-        /// <param name="numberOfConstraints"></param>
-        /// <param name="name"></param>
-        //public static void displayTableau(double[,] tableau, int numberOfVariables, int numberOfConstraints, String name)
-        //{
-        //    for(int i = 0; i < name.Length; i++)
-        //    {
-        //        Console.Write($"-");
-        //    }
-        //    Console.WriteLine();
-        //    Console.WriteLine(name);
-        //    for (int i = 0; i < name.Length; i++)
-        //    {
-        //        Console.Write($"-");
-        //    }
-        //    Console.WriteLine();
-        //    for (int i = 0; i < numberOfConstraints - 1; i++)
-        //    {
-        //        Console.Write($"x{i + 1} \t");
-        //    }
-        //    int s = 1;
-        //    for (int i = numberOfConstraints; i < numberOfConstraints + numberOfVariables + 1; i++)
-        //    {
-        //        Console.Write($"s{s} \t");
-        //        s++;
-        //    }
-        //    Console.WriteLine("RHS");
-        //    for (int i = 0; i < numberOfVariables + 2; i++)
-        //    {
-        //        for (int j = 0; j < numberOfConstraints + numberOfVariables + 1; j++)
-        //        {
-        //            Console.Write(tableau[i, j] + " \t");
-        //        }
-        //        Console.WriteLine("");
-        //    }
-        //}
-
-        /// <summary>
-        /// This function will perform the primal simplex algorithm on the given tableau
-        /// </summary>
-        /// <param name="constraintMatrix"></param>
-        /// <param name="RHS"></param>
-        /// <param name="stCoefficients"></param>
-        /// <returns>Solved Tablue</returns>
-        /// <exception cref="Exception"></exception>
-        //public static double[,] PrimalSimplex(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
-        //{
-        //    int numberOfConstraints = RHS.Length-1;
-        //    int numberOfVariables = stCoefficients.Length;
-
-        //    //Initialize tableau
-        //    double[,] tableau = CanonicalForm(constraintMatrix,RHS,stCoefficients);
-
-        //    displayTableau(tableau, numberOfVariables, numberOfConstraints, "Canonical Form:");
-
-        //    while (true)
-        //    {
-        //        //step 1 - check for optimality
-        //        int pivotColumn = -1;
-
-        //        for (int j = 0; j < numberOfVariables + numberOfConstraints; j++)//go through each column (number of variables + number of constraints to include slack variables)
-        //        {
-        //            if (tableau[0, j] < 0)
-        //            {
-        //                pivotColumn = j;
-        //                break;
-        //            }
-        //        }
-
-        //        if (pivotColumn == -1) break;//Optimal
-
-        //        for (int j = 0; j < numberOfVariables + numberOfConstraints; j++)//go through each column (number of variables + number of constraints to include slack variables)
-        //        {
-        //            if (tableau[0, j] < tableau[0, pivotColumn])
-        //            {
-        //                pivotColumn = j;
-        //            }
-        //        }
-
-        //        //step 2 - find pivot row
-        //        int pivotRow = -1;
-        //        double minRatio = double.MaxValue; //constant that represents the largest possible value for a double
-
-        //        for (int i = 1; i < numberOfConstraints + 1; i++)//start at one since z row can't be a pivot row
-        //        {
-        //            if (tableau[i, pivotColumn] > 0)//only want positive values since anything divided by a negative is negative and we want smallest positive value of the ratio
-        //            {
-        //                double ratio = tableau[i, numberOfVariables + numberOfConstraints] / tableau[i, pivotColumn];//RHS value / pivot column value
-        //                if (ratio < minRatio)
-        //                {
-        //                    minRatio = ratio;
-        //                    pivotRow = i;
-        //                }
-        //            }
-        //        }
-
-        //        if (pivotRow == -1) throw new Exception("Unbounded"); //Unbounded
-
-        //        //step 3 - pivot
-        //        double pivotValue = tableau[pivotRow, pivotColumn];
-
-        //        for (int j = 0; j < numberOfVariables + numberOfConstraints + 1; j++)
-        //        {
-        //            tableau[pivotRow, j] = tableau[pivotRow, j] / pivotValue;
-        //        }
-
-        //        for (int i = 0; i < numberOfConstraints + 1; i++)
-        //        {
-        //            if (i != pivotRow)
-        //            {
-        //                double ratio = tableau[i, pivotColumn];
-        //                for (int j = 0; j < numberOfVariables + numberOfConstraints + 1; j++)
-        //                {
-        //                    tableau[i, j] -= ratio * tableau[pivotRow, j];
-        //                }
-        //            }
-        //        }
-        //    }
-
-           
-        //    return tableau;
-
-        //}
-
-
         public static TableauModel PrimalSimplex(TableauModel tableau)
         {
             int numberOfConstraints = tableau.NumberOfConstraints;
@@ -241,43 +83,6 @@ namespace LPR_App
             return tableauModel;
 
         }
-
-        /// <summary>
-        /// This function will convert the given input into canonical form
-        /// </summary>
-        /// <param name="constraintMatrix"></param>
-        /// <param name="RHS"></param>
-        /// <param name="stCoefficients"></param>
-        /// <returns>canonical form</returns>
-        //private static double[,] CanonicalForm(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
-        //{
-        //    int numberOfConstraints = RHS.Length-1;
-        //    int numberOfVariables = stCoefficients.Length;
-
-        //    //Initialize tableau
-        //    double[,] tableau = new double[numberOfConstraints + 1, numberOfVariables + numberOfConstraints + 1];//2D array with number of constraints rows and number of variables + number of constraints(slack variables) columns
-
-        //    //Objective Function Row
-        //    for (int j = 0; j < numberOfVariables; j++)
-        //    {
-        //        tableau[0, j] = -stCoefficients[j];//make the z row variables negative
-        //    }
-
-        //    tableau[0, numberOfVariables + numberOfConstraints] = RHS[0];//Objective Function Row RHS
-
-        //    //Constraint Rows
-        //    for (int i = 0; i < numberOfConstraints; i++)
-        //    {
-        //        for (int j = 0; j < numberOfVariables; j++)
-        //        {
-        //            tableau[i + 1, j] = constraintMatrix[i, j];//put the constraint matrix values in the tableau row by row
-        //        }
-        //        tableau[i + 1, numberOfVariables + i] = 1; //Slack Variables
-        //        tableau[i + 1, numberOfVariables + numberOfConstraints] = RHS[i + 1];//RHS values
-        //    }
-
-        //    return tableau;
-        //}
 
         public static void RevisedPrimalSimplex()
         {
@@ -397,7 +202,7 @@ namespace LPR_App
         /// <param name="stCoefficients"></param>
         /// <returns></returns>
         public static void CuttingPlane(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
-        { 
+        {
             Console.WriteLine("You've selected to solve with the Cutting Plane Simplex Algorithm...");
             Console.WriteLine("First, we must find the optimal values with the Primal Simplex Algorithm:");
 
@@ -415,14 +220,188 @@ namespace LPR_App
             bool allIntegers = AllIntegers(variableAnswers);
             if (allIntegers)
             {
-                Console.WriteLine("The Primal Simplex optimal values are all integers, therefore there is no need to continue with the Cutting Plane Simplex Algorithm.");
+                Console.WriteLine("The current x-variable optimal values are all integers, therefore there is no need to continue with the Cutting Plane Simplex Algorithm.");
             }
             else
             {
-                double selectedConstraint = SelectConstraint(variableAnswers);
+                int selectedConstraintRow = (int)SelectConstraint(variableAnswers);
                 Console.WriteLine();
-                Console.WriteLine("We will select constraint " + selectedConstraint);
+
+                //testing
+                //Console.WriteLine("We will select constraint " + (double)selectedConstraintRow);
+
+                double[] constraintValues = new double[primalOptimal.GetLength(1)];
+                for (int j = 0; j < primalOptimal.GetLength(1); j++)
+                {
+                    constraintValues[j] = primalOptimal[selectedConstraintRow, j];                  
+                }
+
+                //testing
+                //double[] coefficents = { 0.0, 1.4, -1.25, 0, 1, 1.4 };
+                //double[] newConstraint = CreateNewConstraint(coefficents, (stCoefficients.Length + constraintMatrix.GetLength(1) + stCoefficients.Length - 1), stCoefficients.Length);
+
+                double[] newConstraint = CreateNewConstraint(constraintValues, (stCoefficients.Length + constraintMatrix.GetLength(1) + stCoefficients.Length - 1), stCoefficients.Length);
+                //double[,] newConstraintMatrix = new double[constraintMatrix.GetLength(0) + 1, constraintMatrix.GetLength(1)];
+
+                //testing
+                for (int i = 0; i < newConstraint.Length; i++)
+                {
+                    Console.WriteLine(newConstraint[i]);
+                }
+
+                double[,] newConstraintMatrix = UpdateConstraintMatrix(constraintMatrix, newConstraint);
+                //double[,] newCoefficientMatrix = UpdateCoefficientMatrix(stCoefficients, constraintMatrix.GetLength(1), newConstraint);
+                //double[] newRHSMatrix = UpdateRHSMatrix(RHS, stCoefficients.Length + constraintMatrix.GetLength(1), newConstraint, );
+
+                for (int i = 0; i <constraintMatrix.GetLength(0); i++)
+                {
+                    for (int j = 0;j < newConstraintMatrix.GetLength(1);j++)
+                        Console.WriteLine(constraintMatrix[i,j]);
+                }
+
+
+                //model = new TableauModel()
+
+                //double[] coefficents = { 0.0, 1.4, -1.25, 0, 1, 1.4 };  
+                //CreateNewConstraint(coefficents, (stCoefficients.Length + constraintMatrix.GetLength(1) + stCoefficients.Length - 1), stCoefficients.Length);
             }
+        }
+
+        public static double[] ExtractDecimalPart(double[] coefficients)
+        {
+            double[] result = new double[coefficients.Length];
+
+            //testing
+            //Console.WriteLine("Hello");
+            //for (int i = 0; i < coefficients.Length; i++)
+            //{
+            //    Console.WriteLine(coefficients[i]);
+            //}
+            //Console.WriteLine("Hello");
+
+            for (int i = 0; i < coefficients.Length; i++)
+            {
+                double decimalPart = coefficients[i] - Math.Truncate(coefficients[i]);
+
+                // Check if the value is a whole number or 0
+                if (decimalPart == 0)
+                {
+                    result[i] = 0;
+                }
+                else
+                {
+                    // Handle positive values
+                    if (coefficients[i] > 0)
+                    {
+                        result[i] = Math.Round(decimalPart * -1, 3);
+                    }
+                    // Handle negative values
+                    else
+                    {
+                        result[i] = Math.Round((1 - Math.Abs(decimalPart)) * -1, 3);
+                    }
+                }
+            }
+
+            //testing
+            //Console.WriteLine("Bye");
+            //for (int i = 0; i < result.Length; i++)
+            //{
+            //    Console.WriteLine(result[i]);
+            //}
+            //Console.WriteLine("Bye");
+
+            return result;
+        }
+
+        public static double[] CreateNewConstraint(double[] rowValues, int tableauSize, int numCoefficients)
+        {
+            double[] result = new double[rowValues.Length + 1];
+            double[] decimalConstraint = ExtractDecimalPart(rowValues);
+
+            for (int i = 0; i < decimalConstraint.Length; i++)
+            {
+                result[i] = decimalConstraint[i];
+            }
+
+            result[result.Length - 2] = 1.0;
+
+            // add new slack variable
+            result[result.Length - 1] = decimalConstraint[decimalConstraint.Length - 1];
+
+            //testing
+            //for (int i = 0; i < result.Length; i++)
+            //{
+            //    Console.WriteLine(result[i]);
+            //}
+
+            return result;
+        }
+
+        public static double[,] UpdateConstraintMatrix(double[,] originalMatrix, double[] constraintToAdd)
+        {
+            double[,] result = new double[originalMatrix.GetLength(0) + 1, originalMatrix.GetLength(1)];
+
+            for (int i = 0; i < originalMatrix.GetLength(0); i++)
+            {
+                for (int j = 0; j < originalMatrix.GetLength(1); j++)
+                {
+                    result[i, j] = originalMatrix[i, j];
+                }
+            }
+
+            // Add the new constraint to the last row of the new constraint matrix
+            int lastRow = result.GetLength(0) - 1;
+            for (int j = 0; j < originalMatrix.GetLength(1); j++)
+            {
+                result[result.GetLength(0) - 1, j] = constraintToAdd[j];
+
+            }
+
+            // Testing
+            for (int i = 0; i < result.GetLength(0); i++)
+            {
+                for (int j = 0; j < result.GetLength(1); j++)
+                {
+                    Console.Write(result[i, j] + " ");
+                }
+                Console.WriteLine();
+            }
+
+            return result;
+        }
+
+        public static double[,] UpdateCoefficientMatrix(double[,] originalMatrix, int numConstraints, double[] constraintToAdd)
+        {
+            double[,] result = new double[originalMatrix.GetLength(0) + 1, originalMatrix.GetLength(1)];
+
+            for (int i = 0; i < originalMatrix.GetLength(0); i++)
+            {
+                for (int j = 0; j < originalMatrix.GetLength(1); j++)
+                {
+                    result[i, j] = originalMatrix[i, j];
+                }
+            }
+
+            // Add the new constraint to the last row of the new constraint matrix
+            int lastRow = result.GetLength(0) - 1;
+            for (int j = numConstraints; j < numConstraints + originalMatrix.GetLength(1); j++)
+            {
+                result[result.GetLength(0) - 1, j] = constraintToAdd[j];
+
+            }
+
+            // Testing
+            for (int i = 0; i < result.GetLength(0); i++)
+            {
+                for (int j = 0; j < result.GetLength(1); j++)
+                {
+                    Console.Write(result[i, j] + " ");
+                }
+                Console.WriteLine();
+            }
+
+            return result;
         }
 
         void SensitivityAnalysis()
