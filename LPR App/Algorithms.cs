@@ -107,7 +107,7 @@ namespace LPR_App
 
             for (int i = 0; i < value.Length; i++)
             {
-                items.Add(new BranchAndBoundItemModel { Value = value[i], Weight = weight[i], Ratio = value[i] / weight[i], Name = $"X {i + 1}" });
+                items.Add(new BranchAndBoundItemModel { Value = value[i], Weight = weight[i], Ratio = value[i] / weight[i], Name = $"X{i + 1}" });
             }
 
             branches.Add(items, false);
@@ -146,6 +146,7 @@ namespace LPR_App
                             if (item.IsSelected != 0 && item.IsSelected != 1)
                             {
                                 branchesWithSubProblems = addSubBracnhes(branchesWithSubProblems, parentBranch);
+                                break;
                             }
                         }
                         branches[key] = true;
@@ -154,6 +155,9 @@ namespace LPR_App
 
                 branches = branchesWithSubProblems;
             }
+
+            
+
 
         }
 
@@ -189,33 +193,55 @@ namespace LPR_App
 
             foreach (BranchAndBoundItemModel item in result)
             {
-                if (weightLimit - item.Weight > 0)
+                if (weightLimit>0)
                 {
-                    weightLimit -= item.Weight;
-                    item.IsSelected = 1;
+                    if (weightLimit - item.Weight >= 0)
+                    {
+                        weightLimit -= item.Weight;
+                        item.IsSelected = 1;
+                    }
+                    else
+                    {
+                        item.IsSelected = weightLimit / item.Weight;
+                        hasSubProblem = true;
+                        break;
+                    }
                 }
                 else
                 {
-                    item.IsSelected = weightLimit / item.Weight;
-                    hasSubProblem = true;
-                    break;
+                    Console.WriteLine("Infeasible solution found");
                 }
             }
 
             result.AddRange(locked);
 
-            if (!hasSubProblem)
+            if (!hasSubProblem && weightLimit>=0)
             {
+                Console.WriteLine("");
                 double totalValue = 0;
                 foreach (BranchAndBoundItemModel item in result)
                 {
                     totalValue += item.IsSelected * item.Value;
                 }
                 Console.WriteLine($"Candidate solution:" + totalValue);
+                Console.WriteLine("Remaining weight:"+weightLimit);
+                displayKnapsackTable(result);
             }
 
 
             return result;
+        }
+
+        private static void displayKnapsackTable(List<BranchAndBoundItemModel> items)
+        {
+            Console.WriteLine("======================================");
+            Console.WriteLine("Name\t|Selected|Weight|Value|Locked");
+            Console.WriteLine("======================================");
+            foreach (BranchAndBoundItemModel item in items)
+            {
+                Console.WriteLine(item.ToString());
+                Console.WriteLine("--------------------------------------");
+            }
         }
 
         private static Dictionary<List<BranchAndBoundItemModel>, bool> addSubBracnhes(Dictionary<List<BranchAndBoundItemModel>, bool> branches, List<BranchAndBoundItemModel> parentBracnh)
