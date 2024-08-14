@@ -18,7 +18,6 @@ double[] c = { 3, 2 };
 
 //Primal Simplex
 TableauModel model = new TableauModel(A,b,c);
-model.ToConsole("Initial Tableau:",true);
 model = Algorithms.PrimalSimplex(model);
 model.ToConsole("Optimal Solution:", false);
 
