@@ -10,7 +10,7 @@ namespace LPR_App
     {
         public static TableauModel PrimalSimplex(TableauModel tableau)
         {
-            int numberOfConstraints = tableau.NumberOfConstraints;
+            int numberOfConstraints = tableau.NumberOfMaxConstraints;
             int numberOfVariables = tableau.NumberOfVariables;
             double[,] tableauC = tableau.CanonicalForm(true);
 
