@@ -9,21 +9,31 @@ namespace LPR_App
 {
     public class TableauModel
     {
-        public double[,] ConstraintMatrix { get; set; }
+        public double[,] MaxConstraintMatrix { get; set; }
+        public double[,] MinConstraintMatrix { get; set; }
         public double[] RightHandSide { get; set; }
         public double[] ObjectiveFunction { get; set; }
 
         public int NumberOfVariables { get; set; }
-        public int NumberOfConstraints { get; set; }
+        public int NumberOfMaxConstraints { get; set; }
 
 
         public TableauModel(double[,] constraintMatrix, double[] rightHandSide, double[] objectiveFunction)
         {
-            ConstraintMatrix = constraintMatrix;
+            MaxConstraintMatrix = constraintMatrix;
             RightHandSide = rightHandSide;
             ObjectiveFunction = objectiveFunction;
             NumberOfVariables = ObjectiveFunction?.Length ?? 0;
-            NumberOfConstraints = RightHandSide?.Length - 1 ?? 0;
+            NumberOfMaxConstraints = RightHandSide?.Length - 1 ?? 0;
+        }
+
+        public TableauModel(double[,] maxConstraintMatrix, double[,] minConstraintMatrix, double[] rightHandSide, double[] objectiveFunction)
+        {
+            MaxConstraintMatrix = maxConstraintMatrix;
+            RightHandSide = rightHandSide;
+            ObjectiveFunction = objectiveFunction;
+            NumberOfVariables = ObjectiveFunction?.Length ?? 0;
+            NumberOfMaxConstraints = RightHandSide?.Length - 1 ?? 0;
         }
 
         public TableauModel(double[,] matrix, int numberOfVariables, int numberOfConstraints)
@@ -46,11 +56,11 @@ namespace LPR_App
                     constraintMatrix[i, j] = matrix[i + 1, j];
                 }
             }
-            ConstraintMatrix = constraintMatrix;
+            MaxConstraintMatrix = constraintMatrix;
             RightHandSide = rightHandSide;
             ObjectiveFunction = objectiveFunction;
             NumberOfVariables = numberOfVariables;
-            NumberOfConstraints = numberOfConstraints;
+            NumberOfMaxConstraints = numberOfConstraints;
         }
 
 
@@ -59,7 +69,7 @@ namespace LPR_App
         {
 
             //Initialize tableau
-            double[,] tableau = new double[NumberOfConstraints + 1, NumberOfVariables + NumberOfConstraints + 1];//2D array with number of constraints rows and number of variables + number of constraints(slack variables) columns
+            double[,] tableau = new double[NumberOfMaxConstraints + 1, NumberOfVariables + NumberOfMaxConstraints + 1];//2D array with number of constraints rows and number of variables + number of constraints(slack variables) columns
 
             if (initialTableau)
             {
@@ -69,32 +79,38 @@ namespace LPR_App
                     tableau[0, j] = -ObjectiveFunction[j];//make the z row variables negative
                 }
 
-                tableau[0, NumberOfVariables + NumberOfConstraints] = RightHandSide[0];//Objective Function Row RHS
+                tableau[0, NumberOfVariables + NumberOfMaxConstraints] = RightHandSide[0];//Objective Function Row RHS
 
                 //Constraint Rows
-                for (int i = 0; i < NumberOfConstraints; i++)
+                for (int i = 0; i < NumberOfMaxConstraints; i++)
                 {
                     for (int j = 0; j < NumberOfVariables; j++)
                     {
-                        tableau[i + 1, j] = ConstraintMatrix[i, j];//put the constraint matrix values in the tableau row by row
+                        tableau[i + 1, j] = MaxConstraintMatrix[i, j];//put the constraint matrix values in the tableau row by row
                     }
                     tableau[i + 1, NumberOfVariables + i] = 1; //Slack Variables
-                    tableau[i + 1, NumberOfVariables + NumberOfConstraints] = RightHandSide[i + 1];//RHS values
+                    tableau[i + 1, NumberOfVariables + NumberOfMaxConstraints] = RightHandSide[i + 1];//RHS values
                 }
             }
             else
             {
-                for (int i = 0; i < NumberOfConstraints + 1; i++)
+                for (int j = 0; j < NumberOfMaxConstraints + NumberOfVariables; j++)
                 {
-                    for (int j = 0; j < NumberOfConstraints + NumberOfVariables ; j++)
+                    tableau[0, j] = ObjectiveFunction[j];
+                }
+
+                for (int i = 1; i < NumberOfMaxConstraints + 1; i++)
+                {
+                    
+                    for (int j = 0; j < NumberOfMaxConstraints + NumberOfVariables ; j++)
                     {
-                        tableau[i, j] = ConstraintMatrix[i, j];
+                        tableau[i, j] = MaxConstraintMatrix[i-1, j];
                     }
                     
                 }
-                for (int i = 0; i < NumberOfConstraints + 1; i++)
+                for (int i = 0; i < NumberOfMaxConstraints + 1; i++)
                 {
-                    tableau[i, NumberOfConstraints + NumberOfVariables] = RightHandSide[i];
+                    tableau[i, NumberOfMaxConstraints + NumberOfVariables] = RightHandSide[i];
                 }
             }
 
@@ -126,15 +142,15 @@ namespace LPR_App
                 Console.Write($"x{i + 1} \t");
             }
             int s = 1;
-            for (int i = NumberOfConstraints; i < NumberOfConstraints + NumberOfVariables + 1; i++)
+            for (int i = NumberOfMaxConstraints; i < NumberOfMaxConstraints + NumberOfVariables + 1; i++)
             {
                 Console.Write($"s{s} \t");
                 s++;
             }
             Console.WriteLine("RHS");
-            for (int i = 0; i < NumberOfConstraints + 1; i++)
+            for (int i = 0; i < NumberOfMaxConstraints + 1; i++)
             {
-                for (int j = 0; j < NumberOfConstraints + NumberOfVariables + 1; j++)
+                for (int j = 0; j < NumberOfMaxConstraints + NumberOfVariables + 1; j++)
                 {
                     Console.Write(CanonicalForm(initialTableau)[i, j] + " \t");
                 }
