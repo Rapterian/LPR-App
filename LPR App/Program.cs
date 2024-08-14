@@ -14,11 +14,18 @@ double[] c = { 3, 2 };
 
 //Primal Simplex
 TableauModel model = new TableauModel(A,b,c);
-model.ToConsole();
+model.ToConsole("Initial Tableau:",true);
 model = Algorithms.PrimalSimplex(model);
-model.ToConsole("Optimal Solution:");
+model.ToConsole("Optimal Solution:", false);
 
 //Cutting Plane Simplex
 Algorithms.CuttingPlane(A, b, c);
+
+
+double[] weight = { 12, 2, 1, 1, 4 };
+double[] value = { 4, 2, 2, 1, 10 };
+double weightLimit = 15;
+
+Algorithms.BranchBoundKnapsack(value,weight , weightLimit);
 
 Console.ReadLine();
