@@ -291,7 +291,7 @@ namespace LPR_App
         /// <param name="numVariables"></param>
         /// <param name="solution"></param>
         /// <returns>matrix with x-variable, row number and variable value</returns>
-        public static double[,] GetXValues(TableauModel tableau, int numVariables, double[,] solution)
+        public static double[,] GetXValues(int numVariables, double[,] solution)
         {
             int rows = solution.GetLength(0);
             int columns = solution.GetLength(1);
@@ -338,16 +338,19 @@ namespace LPR_App
         /// This function will check if all x-variables already have integer answers
         /// </summary>
         /// <param name="RHS"></param>
-        /// <returns>boolean value which indicates if all answers are already integers or not</returns>
-        public static bool AllIntegers(double[,] RHS)
+        /// <returns>boolean array which indicates if each answer is already an integer or not</returns>
+        public static bool[] AllIntegers(double[,] RHS)
         {
-            bool result = true;
+            bool[] result = new bool[RHS.GetLength(0)];
             for (int i = 0; i < RHS.GetLength(0); i++)
             {
                 if (RHS[i, 1] != Math.Floor(RHS[i, 1]))
                 {
-                    result = false;
-                    break;
+                    result[i] = false;
+                }
+                else
+                {
+                    result[i] = true;
                 }
             }
 
@@ -380,78 +383,10 @@ namespace LPR_App
         }
 
         ///<summary>
-        /// This function will perform the cutting plane simplex algorithm
+        /// This function will extract the decimal parts of the values
         /// </summary>
-        /// <param name="constraintMatrix"></param>
-        /// <param name="RHS"></param>
-        /// <param name="stCoefficients"></param>
-        /// <returns></returns>
-        public static void CuttingPlane(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
-        {
-            Console.WriteLine("You've selected to solve with the Cutting Plane Simplex Algorithm...");
-            Console.WriteLine("First, we must find the optimal values with the Primal Simplex Algorithm:");
-
-            TableauModel model = new TableauModel(constraintMatrix, RHS, stCoefficients);
-            model.ToConsole("Initial Tableau",true);
-            model = Algorithms.PrimalSimplex(model);
-            model.ToConsole("Primal Simplex Optimal Solution:",false);
-
-            double[,] primalOptimal = model.CanonicalForm(false);
-
-            //linking variables with values primal simplex optimal values
-            double[,] variableAnswers = GetXValues(model, stCoefficients.Length, primalOptimal);
-
-            //checking if primal simplex solution already has x-values that are all integers
-            bool allIntegers = AllIntegers(variableAnswers);
-            if (allIntegers)
-            {
-                Console.WriteLine("The current x-variable optimal values are all integers, therefore there is no need to continue with the Cutting Plane Simplex Algorithm.");
-            }
-            else
-            {
-                int selectedConstraintRow = (int)SelectConstraint(variableAnswers);
-                Console.WriteLine();
-
-                //testing
-                //Console.WriteLine("We will select constraint " + (double)selectedConstraintRow);
-
-                double[] constraintValues = new double[primalOptimal.GetLength(1)];
-                for (int j = 0; j < primalOptimal.GetLength(1); j++)
-                {
-                    constraintValues[j] = primalOptimal[selectedConstraintRow, j];                  
-                }
-
-                //testing
-                //double[] coefficents = { 0.0, 1.4, -1.25, 0, 1, 1.4 };
-                //double[] newConstraint = CreateNewConstraint(coefficents, (stCoefficients.Length + constraintMatrix.GetLength(1) + stCoefficients.Length - 1), stCoefficients.Length);
-
-                double[] newConstraint = CreateNewConstraint(constraintValues, (stCoefficients.Length + constraintMatrix.GetLength(1) + stCoefficients.Length - 1), stCoefficients.Length);
-                //double[,] newConstraintMatrix = new double[constraintMatrix.GetLength(0) + 1, constraintMatrix.GetLength(1)];
-
-                //testing
-                for (int i = 0; i < newConstraint.Length; i++)
-                {
-                    Console.WriteLine(newConstraint[i]);
-                }
-
-                double[,] newConstraintMatrix = UpdateConstraintMatrix(constraintMatrix, newConstraint);
-                //double[,] newCoefficientMatrix = UpdateCoefficientMatrix(stCoefficients, constraintMatrix.GetLength(1), newConstraint);
-                //double[] newRHSMatrix = UpdateRHSMatrix(RHS, stCoefficients.Length + constraintMatrix.GetLength(1), newConstraint, );
-
-                for (int i = 0; i <constraintMatrix.GetLength(0); i++)
-                {
-                    for (int j = 0;j < newConstraintMatrix.GetLength(1);j++)
-                        Console.WriteLine(constraintMatrix[i,j]);
-                }
-
-
-                //model = new TableauModel()
-
-                //double[] coefficents = { 0.0, 1.4, -1.25, 0, 1, 1.4 };  
-                //CreateNewConstraint(coefficents, (stCoefficients.Length + constraintMatrix.GetLength(1) + stCoefficients.Length - 1), stCoefficients.Length);
-            }
-        }
-
+        /// <param name="coefficients"></param>
+        /// <returns>array of decimal parts of values</returns>
         public static double[] ExtractDecimalPart(double[] coefficients)
         {
             double[] result = new double[coefficients.Length];
@@ -499,6 +434,13 @@ namespace LPR_App
             return result;
         }
 
+        ///<summary>
+        /// This function will create an array which contains the values of the new constraint
+        /// </summary>
+        /// <param name="rowValues"></param>
+        /// <param name="tableauSize"></param>
+        /// <param name="numCoefficients"></param>
+        /// <returns>an array of values that represent the new constraint values to be added</returns>
         public static double[] CreateNewConstraint(double[] rowValues, int tableauSize, int numCoefficients)
         {
             double[] result = new double[rowValues.Length + 1];
@@ -523,70 +465,271 @@ namespace LPR_App
             return result;
         }
 
-        public static double[,] UpdateConstraintMatrix(double[,] originalMatrix, double[] constraintToAdd)
+        ///<summary>
+        /// This function will perform the dual simplex algorithm
+        /// </summary>
+        /// <param name="tableau"></param>
+        /// <param name="numOfVariables"></param>
+        /// <param name="numOfConstraints"></param>
+        /// /// <returns>a matrix containing the tableau after dual simplex</returns>
+        public static double[,] DualSimplex(double[,] tableau, int numOfVariables, int numOfConstraints)
         {
-            double[,] result = new double[originalMatrix.GetLength(0) + 1, originalMatrix.GetLength(1)];
+            int rows = tableau.GetLength(0);
+            int columns = tableau.GetLength(1);
 
-            for (int i = 0; i < originalMatrix.GetLength(0); i++)
+            while (true)
             {
-                for (int j = 0; j < originalMatrix.GetLength(1); j++)
+                // step 1 - identify the leaving variable (row) - minimum in the RHS (b) column
+                int leavingRow = -1;
+                double minRHS = double.MaxValue;
+
+                for (int i = 0; i < numOfConstraints + 1; i++)
                 {
-                    result[i, j] = originalMatrix[i, j];
+                    double rhsValue = tableau[i, columns - 1];
+                    if (rhsValue < 0)
+                    {
+                        if (rhsValue < minRHS)
+                        {
+                            leavingRow = i;
+                            minRHS = tableau[i, columns - 1];
+                        }
+                    }
+                }
+
+                // if there's no negative element in the RHS, the current solution is optimal
+                if (leavingRow == -1)
+                {
+                    Console.WriteLine();
+                    break;
+                }
+
+                // step 2 - identify the entering variable (column) using the dual ratio test
+                int enteringColumn = -1;
+                double minRatio = double.MaxValue;
+
+                for (int j = 0; j < tableau.GetLength(1) - 1; j++)
+                {
+                    if (tableau[leavingRow, j] < 0) // only look at negative coefficients in the leaving row
+                    {
+                        double ratio = Math.Abs(tableau[0, j] / tableau[leavingRow, j]);
+                        if (ratio < minRatio)
+                        {
+                            minRatio = ratio;
+                            enteringColumn = j;
+                        }
+                    }
+                }
+
+                // if no valid entering column is found, the problem is unbounded
+                if (enteringColumn == -1)
+                {
+                    Console.WriteLine("The problem is unbounded.");
+                    break;
+                }
+                
+                // step 3 - pivot
+                Pivot(tableau, leavingRow, enteringColumn);
+
+                for (int i = 0; i < tableau.GetLength(0); i++)
+                {
+                    for (int j = 0; j < tableau.GetLength(1); j++)
+                    {
+                        tableau[i, j] = Math.Round(tableau[i, j], 3);
+                    }
                 }
             }
 
-            // Add the new constraint to the last row of the new constraint matrix
-            int lastRow = result.GetLength(0) - 1;
-            for (int j = 0; j < originalMatrix.GetLength(1); j++)
-            {
-                result[result.GetLength(0) - 1, j] = constraintToAdd[j];
-
-            }
-
-            // Testing
-            for (int i = 0; i < result.GetLength(0); i++)
-            {
-                for (int j = 0; j < result.GetLength(1); j++)
-                {
-                    Console.Write(result[i, j] + " ");
-                }
-                Console.WriteLine();
-            }
-
-            return result;
+            return tableau;
         }
 
-        public static double[,] UpdateCoefficientMatrix(double[,] originalMatrix, int numConstraints, double[] constraintToAdd)
+        ///<summary>
+        /// This function will perform the pivot operation on the tableau
+        /// </summary>
+        /// <param name="tableau"></param>
+        /// <param name="pivotRow"></param>
+        /// <param name="pivotColumn"></param>
+        private static void Pivot(double[,] tableau, int pivotRow, int pivotColumn)
         {
-            double[,] result = new double[originalMatrix.GetLength(0) + 1, originalMatrix.GetLength(1)];
+            int rows = tableau.GetLength(0);
+            int columns = tableau.GetLength(1);
 
-            for (int i = 0; i < originalMatrix.GetLength(0); i++)
+            double pivotValue = tableau[pivotRow, pivotColumn];
+
+            // dividing the pivot row by the pivot element
+            for (int j = 0; j < columns; j++)
             {
-                for (int j = 0; j < originalMatrix.GetLength(1); j++)
+                tableau[pivotRow, j] /= pivotValue;
+            }
+
+            // subtract multiples of the pivot row from the other rows
+            for (int i = 0; i < rows; i++)
+            {
+                if (i != pivotRow)
                 {
-                    result[i, j] = originalMatrix[i, j];
+                    double factor = tableau[i, pivotColumn];
+                    for (int j = 0; j < columns; j++)
+                    {
+                        tableau[i, j] -= factor * tableau[pivotRow, j];
+                    }
+                }
+            }
+        }
+
+        ///<summary>
+        /// This function will create a new table with the new added constraint
+        /// </summary>
+        /// <param name="previousTable"></param>
+        /// <param name="constraintRow"></param>
+        /// <param name="columns"></param>
+        /// <param name="numCoefficients"></param>
+        /// <returns>a matrix containing the new table with the new constraint</returns>
+        public static double[,] CreateNewTable(double[,] previousTable, int constraintRow, int columns, int numCoefficients)
+        {
+            //testing
+            //Console.WriteLine("We will select constraint " + (double)constraintRow);
+
+            // adding values of selected constraint row to array
+            double[] constraintValues = new double[previousTable.GetLength(1)];
+            for (int j = 0; j < previousTable.GetLength(1); j++)
+            {
+                constraintValues[j] = previousTable[constraintRow, j];
+            }
+
+            //testing
+            //double[] coefficents = { 0.0, 1.4, -1.25, 0, 1, 1.4 };
+            //double[] newConstraint = CreateNewConstraint(coefficents, columns, numCoefficients);
+
+            double[] newConstraint = CreateNewConstraint(constraintValues, columns, numCoefficients);
+
+            //testing
+            //for (int i = 0; i < newConstraint.Length; i++)
+            //{
+            //    Console.WriteLine(newConstraint[i]);
+            //}
+
+            double[,] newTable = new double[previousTable.GetLength(0) + 1, previousTable.GetLength(1) + 1];
+            int lastRow = newTable.GetLength(0) - 1;
+            int secondLastColumn = previousTable.GetLength(1) - 1;
+            int lastColumn = previousTable.GetLength(1);
+            double[] rhsValues = new double[previousTable.GetLength(0)];
+
+            for (int i = 0; i < previousTable.GetLength(0); i++)
+            {
+                rhsValues[i] = previousTable[i, secondLastColumn];
+            }
+
+            // adding original optimal values
+            for (int i = 0; i < previousTable.GetLength(0); i++)
+            {
+                for (int j = 0; j < previousTable.GetLength(1); j++)
+                {
+                    newTable[i, j] = previousTable[i, j];
+                    newTable[i, secondLastColumn] = 0;
                 }
             }
 
-            // Add the new constraint to the last row of the new constraint matrix
-            int lastRow = result.GetLength(0) - 1;
-            for (int j = numConstraints; j < numConstraints + originalMatrix.GetLength(1); j++)
+            // adding rhs values
+            for (int i = 0; i < previousTable.GetLength(0); i++)
             {
-                result[result.GetLength(0) - 1, j] = constraintToAdd[j];
-
+                newTable[i, lastColumn] = rhsValues[i];
             }
 
-            // Testing
-            for (int i = 0; i < result.GetLength(0); i++)
+            //adding new constraint
+            for (int j = 0; j < newTable.GetLength(1); j++)
             {
-                for (int j = 0; j < result.GetLength(1); j++)
+                newTable[lastRow, j] = newConstraint[j];
+            }
+
+            //testing
+            //for (int i = 0; i < previousTable.GetLength(0); i++)
+            //{
+            //    for (int j = 0; j < previousTable.GetLength(1); j++)
+            //    {
+            //        Console.Write(previousTable[i, j] + "\t");
+            //    }
+            //        Console.WriteLine();
+            //}
+
+            int numVariables = numCoefficients;
+            int numConstraints = newTable.GetLength(0) - 1;
+
+            TableauModel model1 = new TableauModel(newTable, numVariables, numConstraints);
+            // displaying table with added constraint
+            model1.ToConsole("Adding New Constraint", false);
+
+            double[,] matrix1 = model1.CanonicalForm(false);
+
+            // performing dual simplex on table with new constraint
+            double[,] table = DualSimplex(matrix1, numVariables, numConstraints);
+
+            TableauModel model2 = new TableauModel(table, numVariables, numConstraints);
+            // displaying table after dual simplex
+            model2.ToConsole("Tableau After Pivoting", false);
+
+            double[,] afterPivot = DualSimplex(matrix1, numVariables, numConstraints);
+
+            return afterPivot;
+        }
+
+        ///<summary>
+        /// This function will perform the cutting plane simplex algorithm
+        /// </summary>
+        /// <param name="constraintMatrix"></param>
+        /// <param name="RHS"></param>
+        /// <param name="stCoefficients"></param>
+        public static void CuttingPlane(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
+        {
+            Console.WriteLine("You've selected to solve with the Cutting Plane Simplex Algorithm...");
+            Console.WriteLine("First, we must find the optimal values with the Primal Simplex Algorithm:");
+
+            TableauModel model = new TableauModel(constraintMatrix, RHS, stCoefficients);
+            model.ToConsole("Initial Tableau", true);
+            model = Algorithms.PrimalSimplex(model);
+            model.ToConsole("Primal Simplex Optimal Solution", false);
+
+            double[,] primalOptimal = model.CanonicalForm(false);
+
+            // linking variables with values primal simplex optimal values
+            double[,] variableAnswers = GetXValues(stCoefficients.Length, primalOptimal);
+
+            // checking if primal simplex solution already has x-values that are all integers
+            bool proceed = true;
+
+            while (proceed)
+            {
+                // checking if all rhs values are already integers
+                bool[] allIntegers = AllIntegers(variableAnswers);
+
+                proceed = false;
+                for (int i = 0; i < allIntegers.Length; i++)
                 {
-                    Console.Write(result[i, j] + " ");
+                    if (allIntegers[i] == false)
+                    {
+                        proceed = true;
+                        break;
+                    }
                 }
+
+                if (!proceed)
+                {
+                    break;
+                }
+
+                // slecting the pivot row
+                int selectedConstraintRow = (int)SelectConstraint(variableAnswers);
                 Console.WriteLine();
+
+                // creating a new table with the new constraint
+                double[,] newTable = CreateNewTable(primalOptimal, selectedConstraintRow, (stCoefficients.Length + constraintMatrix.GetLength(1) + stCoefficients.Length - 1), stCoefficients.Length);
+
+                // linking variables with values primal simplex optimal values
+                variableAnswers = GetXValues(stCoefficients.Length, newTable);
             }
 
-            return result;
+            if (!proceed)
+            {
+                Console.WriteLine("All x-variable optimal values are now integers. Cutting Plane Simplex Algorithm complete.");
+            }
         }
 
         void SensitivityAnalysis()
