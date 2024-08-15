@@ -6,54 +6,67 @@ using System.Threading.Tasks;
 
 namespace LPR_App
 {
-    internal class FileHandling
+     public class FileHandler
     {
-        // Method to read data from a file
-        public string ReadFile(string filePath)
+        public static double[,] ReadMatrixFromCsv(string filePath)
         {
-            try
+            var lines = File.ReadAllLines(filePath);
+            int rows = lines.Length;
+            int columns = lines[0].Split(',').Length;
+            double[,] matrix = new double[rows, columns];
+
+            for (int i = 0; i < rows; i++)
             {
-                // Reads all text from the specified file
-                string content = File.ReadAllText(filePath);
-                return content; // Returns the file content as a string
+                var values = lines[i].Split(',');
+                for (int j = 0; j < columns; j++)
+                {
+                    matrix[i, j] = double.Parse(values[j]);
+                }
             }
-            catch (Exception ex)
+
+            return matrix;
+        }
+
+        public static void WriteMatrixToCsv(string filePath, double[,] matrix)
+        {
+            using (StreamWriter writer = new StreamWriter(filePath))
             {
-                // In case of an error, it will print the error message
-                Console.WriteLine($"Error reading file: {ex.Message}");
-                return null; // Returns null if reading fails
+                int rows = matrix.GetLength(0);
+                int columns = matrix.GetLength(1);
+
+                for (int i = 0; i < rows; i++)
+                {
+                    string[] values = new string[columns];
+                    for (int j = 0; j < columns; j++)
+                    {
+                        values[j] = matrix[i, j].ToString();
+                    }
+                    writer.WriteLine(string.Join(",", values));
+                }
             }
         }
 
-        // Method to write data to a file
-        public void WriteFile(string filePath, string content)
+        public static double[] ReadArrayFromCsv(string filePath)
         {
-            try
+            var lines = File.ReadAllLines(filePath);
+            double[] array = new double[lines.Length];
+
+            for (int i = 0; i < lines.Length; i++)
             {
-                // Writes the specified content to the specified file
-                File.WriteAllText(filePath, content);
-                Console.WriteLine("File written successfully.");
+                array[i] = double.Parse(lines[i]);
             }
-            catch (Exception ex)
-            {
-                // In case of an error, it will print the error message
-                Console.WriteLine($"Error writing file: {ex.Message}");
-            }
+
+            return array;
         }
 
-        // Method to update a file by appending new content
-        public void UpdateFile(string filePath, string newContent)
+        public static void WriteArrayToCsv(string filePath, double[] array)
         {
-            try
+            using (StreamWriter writer = new StreamWriter(filePath))
             {
-                // Appends the specified content to the specified file
-                File.AppendAllText(filePath, newContent);
-                Console.WriteLine("File updated successfully.");
-            }
-            catch (Exception ex)
-            {
-                // In case of an error, it will print the error message
-                Console.WriteLine($"Error updating file: {ex.Message}");
+                foreach (var value in array)
+                {
+                    writer.WriteLine(value);
+                }
             }
         }
     }
