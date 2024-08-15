@@ -10,12 +10,17 @@ namespace LPR_App
     {
         public static TableauModel PrimalSimplex(TableauModel tableau)
         {
+            if(tableau.NumberOfMinConstraints != 0)
+            {
+                throw new Exception("Primal Simplex only works with maximization problems");
+            }
             int numberOfConstraints = tableau.NumberOfMaxConstraints;
             int numberOfVariables = tableau.NumberOfVariables;
             double[,] tableauC = tableau.CanonicalForm(true);
-
+            int iteration = 0;
             while (true)
             {
+                
                 //step 1 - check for optimality
                 int pivotColumn = -1;
 
@@ -37,6 +42,8 @@ namespace LPR_App
                         pivotColumn = j;
                     }
                 }
+                TableauModel tableauIteration = new TableauModel(tableauC, numberOfVariables, numberOfConstraints);
+                tableauIteration.ToConsole($"Iteration {iteration}", false);
 
                 //step 2 - find pivot row
                 int pivotRow = -1;
@@ -76,6 +83,8 @@ namespace LPR_App
                         }
                     }
                 }
+
+                iteration++;
             }
 
             TableauModel tableauModel = new TableauModel(tableauC, numberOfVariables, numberOfConstraints);
