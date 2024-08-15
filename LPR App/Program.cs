@@ -1,5 +1,5 @@
-using Sytem;
-﻿using LPR_App;
+using System;
+using LPR_App;
 
 namespace LPR_App
 {
