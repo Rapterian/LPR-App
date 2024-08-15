@@ -27,4 +27,11 @@ double weightLimit = 15;
 
 Algorithms.BranchBoundKnapsack(value,weight , weightLimit);
 
+double[,] tableau = model.MaxConstraintMatrix;
+
+double[] result = Algorithms.GetNonBasicVariableRange(tableau, model.NumberOfVariables, model.NumberOfMaxConstraints, 0);
+
+Console.WriteLine($"Allowable Increase: {result[0]}");
+Console.WriteLine($"Allowable Decrease: {result[1]}");
+
 Console.ReadLine();

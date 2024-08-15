@@ -12,12 +12,14 @@ namespace LPR_App
       
         public double[,] MaxConstraintMatrix { get; set; }
         public double[,] MinConstraintMatrix { get; set; }
+        public double[,] Matrix { get; set; }
         public double[] RightHandSide { get; set; }
         public double[] ObjectiveFunction { get; set; }
 
         public int NumberOfVariables { get; set; }
         public int NumberOfMaxConstraints { get; set; }
         public int NumberOfMinConstraints { get; set; }
+        public int NumberOfConstraints { get; set; }
 
 
         public TableauModel(double[,] constraintMatrix, double[] rightHandSide, double[] objectiveFunction)
@@ -233,6 +235,93 @@ namespace LPR_App
         public void ToConsole(bool initialTableau)
         {
             ToConsole("", initialTableau);
+        }
+
+        public double[,] nonBasicVariableMatrix()
+        {
+            int numberOfConstraints = NumberOfMaxConstraints + NumberOfMinConstraints;
+            int totalVariables = NumberOfVariables + numberOfConstraints; // Decision variables + Slack/excess variables
+
+            List<int> nonBasicVariableIndices = new List<int>();
+
+            // Collect the indices of non-basic variables (i.e., columns not part of the identity matrix)
+            for (int j = 0; j < totalVariables; j++)
+            {
+                bool isNonBasic = true;
+                for (int i = 0; i < numberOfConstraints; i++)
+                {
+                    if (MaxConstraintMatrix[i, j] == 1.0)
+                    {
+                        isNonBasic = false;
+                        break;
+                    }
+                }
+                if (isNonBasic)
+                {
+                    nonBasicVariableIndices.Add(j);
+                }
+            }
+
+            // Create the non-basic variable matrix
+            double[,] nonBasicMatrix = new double[numberOfConstraints + 1, nonBasicVariableIndices.Count + 1];
+
+            for (int i = 0; i < numberOfConstraints + 1; i++)
+            {
+                for (int j = 0; j < nonBasicVariableIndices.Count; j++)
+                {
+                    nonBasicMatrix[i, j] = CanonicalForm(false)[i, nonBasicVariableIndices[j]];
+                }
+                nonBasicMatrix[i, nonBasicVariableIndices.Count] = CanonicalForm(false)[i, totalVariables];
+            }
+
+            return nonBasicMatrix;
+        }
+        public double[,] basicVariableMatrix()
+        {
+            int numberOfConstraints = NumberOfMaxConstraints + NumberOfMinConstraints;
+            int totalVariables = NumberOfVariables + numberOfConstraints; // Decision variables + Slack/excess variables
+
+            List<int> basicVariableIndices = new List<int>();
+
+            // Collect the indices of basic variables (i.e., columns forming the identity matrix)
+            for (int j = 0; j < totalVariables; j++)
+            {
+                bool isBasic = true;
+                for (int i = 0; i < numberOfConstraints; i++)
+                {
+                    if (i == j)
+                    {
+                        if (MaxConstraintMatrix[i, j] != 1.0)
+                        {
+                            isBasic = false;
+                            break;
+                        }
+                    }
+                    else if (MaxConstraintMatrix[i, j] != 0.0)
+                    {
+                        isBasic = false;
+                        break;
+                    }
+                }
+                if (isBasic)
+                {
+                    basicVariableIndices.Add(j);
+                }
+            }
+
+            // Create the basic variable matrix
+            double[,] basicMatrix = new double[numberOfConstraints + 1, basicVariableIndices.Count + 1];
+
+            for (int i = 0; i < numberOfConstraints + 1; i++)
+            {
+                for (int j = 0; j < basicVariableIndices.Count; j++)
+                {
+                    basicMatrix[i, j] = CanonicalForm(false)[i, basicVariableIndices[j]];
+                }
+                basicMatrix[i, basicVariableIndices.Count] = CanonicalForm(false)[i, totalVariables];
+            }
+
+            return basicMatrix;
         }
     }
 }
