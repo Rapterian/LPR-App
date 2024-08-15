@@ -18,30 +18,42 @@ namespace LPR_App
 
             // Example data for testing the algorithms
             double[,] A = {
-                            { 1, 1 },
-                            { 2, 1 },
-                            { 1, 3 }
-                          };
+                { 1, 1 },
+                { 2, 1 },
+                { 1, 3 }
+              };
 
             double[] b = { 0, 4, 5, 6 };
             double[] c = { 3, 2 };
 
-            // Primal Simplex
-            TableauModel model = new TableauModel(A, b, c);
+            //double[,] solution = Algorithms.PrimalSimplex(A, b, c);
+            //Algorithms.displayTableau(solution, c.Length, b.Length-1, "Optimal Solution:");
+
+            //Primal Simplex
+            TableauModel model = new TableauModel(A,b,c);
             model = Algorithms.PrimalSimplex(model);
             model.ToConsole("Optimal Solution:", false);
 
-            // Cutting Plane Simplex
+            //Cutting Plane Simplex
             Algorithms.CuttingPlane(A, b, c);
 
-            // Branch & Bound Knapsack
+
             double[] weight = { 12, 2, 1, 1, 4 };
             double[] value = { 4, 2, 2, 1, 10 };
             double weightLimit = 15;
 
-            Algorithms.BranchBoundKnapsack(value, weight, weightLimit);
+            Algorithms.BranchBoundKnapsack(value,weight , weightLimit);
+
+            double[,] tableau = model.MaxConstraintMatrix;
+
+            double[] result = Algorithms.GetNonBasicVariableRange(tableau, model.NumberOfVariables, model.NumberOfMaxConstraints, 0);
+
+            Console.WriteLine($"Allowable Increase: {result[0]}");
+            Console.WriteLine($"Allowable Decrease: {result[1]}");
 
             Console.ReadLine();
+
         }
     }
 }
+
