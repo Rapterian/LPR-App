@@ -36,20 +36,20 @@ namespace LPR_App
             RightHandSide = rightHandSide;
             ObjectiveFunction = objectiveFunction;
             NumberOfVariables = ObjectiveFunction?.Length ?? 0;
-            int NumberOfMaxConstraints = 0;
+            NumberOfMaxConstraints = 0;
 
-            // Assuming maxConstraintMatrix is a 2D array
-            if (maxConstraintMatrix != null && maxConstraintMatrix.GetLength(1) > 0)
+            
+            if (maxConstraintMatrix != null && maxConstraintMatrix.GetLength(0) > 0)
             {
-                NumberOfMaxConstraints = maxConstraintMatrix.GetLength(1) - 1;
+                NumberOfMaxConstraints = maxConstraintMatrix.GetLength(0) ;
             }
 
-            int NumberOfMinConstraints = 0;
+            NumberOfMinConstraints = 0;
 
-            // Assuming maxConstraintMatrix is a 2D array
-            if (minConstraintMatrix != null && minConstraintMatrix.GetLength(1) > 0)
+           
+            if (minConstraintMatrix != null && minConstraintMatrix.GetLength(0) > 0)
             {
-                NumberOfMinConstraints = minConstraintMatrix.GetLength(1) - 1;
+                NumberOfMinConstraints = minConstraintMatrix.GetLength(0) ;
             }
         }
 

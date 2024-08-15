@@ -11,6 +11,10 @@ namespace LPR_App
         
         public static TableauModel PrimalSimplex(TableauModel tableau)
         {
+            if(tableau.NumberOfMinConstraints != 0)
+            {
+                throw new Exception("Primal Simplex only works with maximization problems");
+            }
             int numberOfConstraints = tableau.NumberOfMaxConstraints;
             int numberOfVariables = tableau.NumberOfVariables;
             double[,] tableauC = tableau.CanonicalForm(true);
