@@ -722,7 +722,7 @@ namespace LPR_App
                 // creating a new table with the new constraint
                 double[,] newTable = CreateNewTable(primalOptimal, selectedConstraintRow, (stCoefficients.Length + constraintMatrix.GetLength(1) + stCoefficients.Length - 1), stCoefficients.Length);
 
-                // linking variables with values primal simplex optimal values
+                // linking variables with optimal values
                 variableAnswers = GetXValues(stCoefficients.Length, newTable);
             }
 
