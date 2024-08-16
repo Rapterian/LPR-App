@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra.Double;
 
 namespace LPR_App
 {
@@ -10,12 +12,17 @@ namespace LPR_App
     {
         public static TableauModel PrimalSimplex(TableauModel tableau)
         {
+            if(tableau.NumberOfMinConstraints != 0)
+            {
+                throw new Exception("Primal Simplex only works with maximization problems");
+            }
             int numberOfConstraints = tableau.NumberOfMaxConstraints;
             int numberOfVariables = tableau.NumberOfVariables;
             double[,] tableauC = tableau.CanonicalForm(true);
-
+            int iteration = 0;
             while (true)
             {
+                
                 //step 1 - check for optimality
                 int pivotColumn = -1;
 
@@ -37,6 +44,8 @@ namespace LPR_App
                         pivotColumn = j;
                     }
                 }
+                TableauModel tableauIteration = new TableauModel(tableauC, numberOfVariables, numberOfConstraints);
+                tableauIteration.ToConsole($"Iteration {iteration}", false);
 
                 //step 2 - find pivot row
                 int pivotRow = -1;
@@ -76,6 +85,8 @@ namespace LPR_App
                         }
                     }
                 }
+
+                iteration++;
             }
 
             TableauModel tableauModel = new TableauModel(tableauC, numberOfVariables, numberOfConstraints);
@@ -891,7 +902,7 @@ namespace LPR_App
                 // creating a new table with the new constraint
                 double[,] newTable = CreateNewTable(primalOptimal, selectedConstraintRow, (stCoefficients.Length + constraintMatrix.GetLength(1) + stCoefficients.Length - 1), stCoefficients.Length);
 
-                // linking variables with values primal simplex optimal values
+                // linking variables with optimal values
                 variableAnswers = GetXValues(stCoefficients.Length, newTable);
             }
 
@@ -901,9 +912,7 @@ namespace LPR_App
             }
         }
 
-        void SensitivityAnalysis()
-        {
-            //Everyone
-        }
+        
+
     }
 }

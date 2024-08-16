@@ -1,5 +1,5 @@
-﻿using Sytem;
-﻿using LPR_App;
+using System;
+using LPR_App;
 
 namespace LPR_App
 {
@@ -22,28 +22,204 @@ double[,] A = {
                 { 1, 3 }
               };
 
-double[] b = { 0, 4, 5, 6 };
-double[] c = { 3, 2 };
 
-//double[,] solution = Algorithms.PrimalSimplex(A, b, c);
-//Algorithms.displayTableau(solution, c.Length, b.Length-1, "Optimal Solution:");
+            while (true)
+            {
+                // Display menu options
+                Console.WriteLine("1. Solve using Primal Simplex Algorithm");
+                Console.WriteLine("2. Solve using Branch & Bound Simplex Algorithm");
+                Console.WriteLine("3. Solve using Cutting Plane Algorithm");
+                Console.WriteLine("4. Perform Sensitivity Analysis");
+                Console.WriteLine("5. Read Problem from File");
+                Console.WriteLine("6. Write Problem to File");
+                Console.WriteLine("7. Exit");
+                Console.Write("Choose an option: ");
+                int choice = int.Parse(Console.ReadLine());
 
-//Primal Simplex
-TableauModel model = new TableauModel(A,b,c);
-model.ToConsole("Initial Tableau:",true);
-model = Algorithms.PrimalSimplex(model);
-model.ToConsole("Optimal Solution:", false);
+                TableauModel model = null;
 
-//Branch and Bound Simplex
-Algorithms.BranchBoundSimplex(A, b, c);
-//Cutting Plane Simplex
-Algorithms.CuttingPlane(A, b, c);
+                switch (choice)
+                {
+                    case 1:
+                        model = GetSampleModel();
+                        model = Algorithms.PrimalSimplex(model);
+                        model.ToConsole("Optimal Solution:", false);
+                        break;
+                    case 2:
+                        // Sample data for Branch & Bound Knapsack
+                        double[] weight = { 12, 2, 1, 1, 4 };
+                        double[] value = { 4, 2, 2, 1, 10 };
+                        double weightLimit = 15;
+                        Algorithms.BranchBoundKnapsack(value, weight, weightLimit);
+                        break;
+                    case 3:
+                        // Sample data for Cutting Plane
+                        double[,] A = { { 1, 1 }, { 2, 1 }, { 1, 3 } };
+                        double[] b = { 0, 4, 5, 6 };
+                        double[] c = { 3, 2 };
+                        Algorithms.CuttingPlane(A, b, c);
+                        break;
+                    case 4:
+                        // Placeholder for sensitivity analysis
+                        Console.WriteLine("Sensitivity Analysis not implemented yet.");
+                        break;
+                    case 5:
+                        Console.Write("Enter the file path to read from: ");
+                        string readPath = Console.ReadLine();
+                        model = FileHandling.ReadFromFile(readPath);
+                        model.ToConsole("Loaded Problem:", true);
+                        break;
+                    case 6:
+                        Console.Write("Enter the file path to save to: ");
+                        string writePath = Console.ReadLine();
+                        if (model != null)
+                        {
+                            FileHandling.WriteToFile(writePath, model);
+                            Console.WriteLine("Problem saved successfully.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("No problem loaded or solved to save.");
+                        }
+                        break;
+                    case 7:
+                        Console.WriteLine("Exiting the program.");
+                        return;
+                    default:
+                        Console.WriteLine("Invalid option. Please try again.");
+                        break;
+                }
+            }
+        }
+
+        static TableauModel GetSampleModel()
+        {
+            double[,] A = {
+                            { 1, 1 },
+                            { 2, 1 },
+                            { 1, 3 }
+                          };
+
+            double[] b = { 0, 4, 5, 6 };
+            double[] c = { 3, 2 };
+
+            //double[,] solution = Algorithms.PrimalSimplex(A, b, c);
+            //Algorithms.displayTableau(solution, c.Length, b.Length-1, "Optimal Solution:");
+
+            //Primal Simplex
+            TableauModel model = new TableauModel(A,b,c);
+            model = Algorithms.PrimalSimplex(model);
+            model.ToConsole("Optimal Solution:", false);
+
+            //Cutting Plane Simplex
+            Algorithms.CuttingPlane(A, b, c);
 
 
-double[] weight = { 12, 2, 1, 1, 4 };
-double[] value = { 4, 2, 2, 1, 10 };
-double weightLimit = 15;
+            double[] weight = { 12, 2, 1, 1, 4 };
+            double[] value = { 4, 2, 2, 1, 10 };
+            double weightLimit = 15;
 
-Algorithms.BranchBoundKnapsack(value,weight , weightLimit);
+            Algorithms.BranchBoundKnapsack(value,weight , weightLimit);
 
-Console.ReadLine();
+            TableauModel initialModel = new TableauModel(A, b, c);
+            initialModel.ToConsole("Initial Tableau:", true);
+
+            model.ToConsole("Optimal Solution:", false);
+            Console.WriteLine();
+
+            double[] cbv = SensitivityAnalysis.GetCBV(initialModel, model);
+            Console.WriteLine("====");
+            Console.WriteLine("CBV:");
+            Console.WriteLine("====");
+            foreach (var item in cbv)
+            {
+                Console.Write(item+"\t");
+            }
+            Console.WriteLine();
+            double[,] B = SensitivityAnalysis.GetB(initialModel, model);
+            Console.WriteLine("==");
+            Console.WriteLine("B:");
+            Console.WriteLine("==");
+            for (int i = 0; i < B.GetLength(0); i++)
+            {
+                for (int j = 0; j < B.GetLength(1); j++)
+                {
+                    Console.Write(B[i,j] + "\t");
+                }
+                Console.WriteLine();
+            }
+            double[,] BInverse = SensitivityAnalysis.GetBInverse(initialModel, model);
+            Console.WriteLine("==========");
+            Console.WriteLine("B Inverse:");
+            Console.WriteLine("==========");
+            for (int i = 0; i < BInverse.GetLength(0); i++)
+            {
+                for (int j = 0; j < BInverse.GetLength(1); j++)
+                {
+                    Console.Write(BInverse[i, j] + "\t");
+                }
+                Console.WriteLine();
+            }
+            
+
+            double[] cbvDotB = SensitivityAnalysis.GetDotProduct(initialModel, model);
+            Console.WriteLine("================");
+            Console.WriteLine("CBV * B Inverse:");
+            Console.WriteLine("================");
+            foreach (var item in cbvDotB)
+            {
+                Console.Write(item + "\t");
+            }
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("===========");
+            Console.WriteLine("RHS ranges:");
+            Console.WriteLine("===========");
+            double[] rhsRanges;
+            for (int i = 0; i < model.NumberOfConstraints(); i++)
+            {
+                // Calculate RHS ranges for constraint i
+                rhsRanges = SensitivityAnalysis.rangeRHS(initialModel, model, i);
+
+                // Display the RHS range for the current constraint
+                Console.WriteLine($"RHS {i}:\nUpper Range: {rhsRanges[0]}\nLower Range: {rhsRanges[1]}\n");
+            }
+
+            Console.WriteLine("=============================");
+            Console.WriteLine("Objective Coefficient Ranges:");
+            Console.WriteLine("=============================");
+            for (int i = 0; i < model.NumberOfVariables; i++)
+            {
+                double[] objectiveRanges;
+                if (model.BasicVariablePos().Contains(i))
+                {
+                    objectiveRanges = SensitivityAnalysis.rangeObjectiveCoefficient(initialModel, model, i,false);
+                }
+                else
+                {
+                    objectiveRanges = SensitivityAnalysis.rangeObjectiveCoefficient(initialModel, model, i, true);
+                }  
+                
+                Console.WriteLine($"Objective Coefficient {i}:\nUpper Range: {objectiveRanges[0]}\nLower Range: {objectiveRanges[1]}\n");
+            }
+
+            Console.WriteLine("==============================");
+            Console.WriteLine("Constraint Coefficient Ranges:");
+            Console.WriteLine("==============================");
+            for (int i = 0; i < model.NumberOfConstraints(); i++)
+            {
+                for (int j = 0; j < model.NumberOfVariables; j++)
+                {
+                    double[] constraintRanges = SensitivityAnalysis.rangeConstraintCoefficient(initialModel, model, i, j);
+                    Console.WriteLine($"Constraint {i}, Variable {j}:\nUpper Range: {constraintRanges[0]}\nLower Range: {constraintRanges[1]}\n");
+                }
+            }
+
+            Console.ReadLine();
+
+
+        }
+        
+    }
+}
+

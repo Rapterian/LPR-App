@@ -6,55 +6,50 @@ using System.Threading.Tasks;
 
 namespace LPR_App
 {
-    internal class FileHandling
+    public class FileHandling
     {
-        // Method to read data from a file
-        public string ReadFile(string filePath)
+        public static void WriteToFile(string filePath, TableauModel model)
         {
-            try
+            using (StreamWriter writer = new StreamWriter(filePath))
             {
-                // Reads all text from the specified file
-                string content = File.ReadAllText(filePath);
-                return content; // Returns the file content as a string
-            }
-            catch (Exception ex)
-            {
-                // In case of an error, it will print the error message
-                Console.WriteLine($"Error reading file: {ex.Message}");
-                return null; // Returns null if reading fails
+                // Write the objective function
+                writer.WriteLine(string.Join(" ", model.ObjectiveFunction));
+
+                // Write the constraints
+                for (int i = 0; i < model.NumberOfMaxConstraints; i++)
+                {
+                    for (int j = 0; j < model.NumberOfVariables; j++)
+                    {
+                        writer.Write(model.MaxConstraintMatrix[i, j] + " ");
+                    }
+                    writer.WriteLine(model.RightHandSide[i + 1]);
+                }
             }
         }
 
-        // Method to write data to a file
-        public void WriteFile(string filePath, string content)
+        public static TableauModel ReadFromFile(string filePath)
         {
-            try
-            {
-                // Writes the specified content to the specified file
-                File.WriteAllText(filePath, content);
-                Console.WriteLine("File written successfully.");
-            }
-            catch (Exception ex)
-            {
-                // In case of an error, it will print the error message
-                Console.WriteLine($"Error writing file: {ex.Message}");
-            }
-        }
+            string[] lines = File.ReadAllLines(filePath);
+            string[] objFuncTokens = lines[0].Split(' ');
 
-        // Method to update a file by appending new content
-        public void UpdateFile(string filePath, string newContent)
-        {
-            try
+            double[] objectiveFunction = Array.ConvertAll(objFuncTokens, double.Parse);
+            int numberOfVariables = objectiveFunction.Length;
+            int numberOfConstraints = lines.Length - 1;
+
+            double[,] constraintMatrix = new double[numberOfConstraints, numberOfVariables];
+            double[] rightHandSide = new double[numberOfConstraints + 1];
+
+            for (int i = 1; i <= numberOfConstraints; i++)
             {
-                // Appends the specified content to the specified file
-                File.AppendAllText(filePath, newContent);
-                Console.WriteLine("File updated successfully.");
+                string[] constraintTokens = lines[i].Split(' ');
+                for (int j = 0; j < numberOfVariables; j++)
+                {
+                    constraintMatrix[i - 1, j] = double.Parse(constraintTokens[j]);
+                }
+                rightHandSide[i] = double.Parse(constraintTokens[numberOfVariables]);
             }
-            catch (Exception ex)
-            {
-                // In case of an error, it will print the error message
-                Console.WriteLine($"Error updating file: {ex.Message}");
-            }
+
+            return new TableauModel(constraintMatrix, rightHandSide, objectiveFunction);
         }
     }
 }
