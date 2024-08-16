@@ -10,9 +10,22 @@ namespace LPR_App
 {
     internal class Algorithms
     {
+        //private static List<string> output = new List<string>();
+
+        //private static void Log(string message)
+        //{
+        //    output.Add(message);
+        //    Console.WriteLine(message);
+        //}
+
+        //public static void SaveLogToFile(string fileName)
+        //{
+        //    FileHandling.WriteToFile(fileName, output);
+        //}
+
         public static TableauModel PrimalSimplex(TableauModel tableau)
         {
-            if(tableau.NumberOfMinConstraints != 0)
+            if (tableau.NumberOfMinConstraints != 0)
             {
                 throw new Exception("Primal Simplex only works with maximization problems");
             }
@@ -46,6 +59,7 @@ namespace LPR_App
                 }
                 TableauModel tableauIteration = new TableauModel(tableauC, numberOfVariables, numberOfConstraints);
                 tableauIteration.ToConsole($"Iteration {iteration}", false);
+
 
                 //step 2 - find pivot row
                 int pivotRow = -1;
@@ -90,6 +104,8 @@ namespace LPR_App
             }
 
             TableauModel tableauModel = new TableauModel(tableauC, numberOfVariables, numberOfConstraints);
+
+            //SaveLogToFile("PrimalSimplex.txt");
 
             return tableauModel;
 
@@ -911,8 +927,5 @@ namespace LPR_App
                 Console.WriteLine("All x-variable optimal values are now integers. The Cutting Plane Simplex Algorithm is complete.");
             }
         }
-
-        
-
     }
 }
