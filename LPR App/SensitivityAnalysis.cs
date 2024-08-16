@@ -67,6 +67,23 @@ namespace LPR_App
 
             return B;
         }
+        public static double[,] GetB(TableauModel initialTableau)
+        {
+            int numberOfConstraints = initialTableau.NumberOfConstraints();
+            var basicVariablePositions = initialTableau.BasicVariablePos(true);
+
+            double[,] B = new double[numberOfConstraints, basicVariablePositions.Count];
+
+            for (int j = 0; j < basicVariablePositions.Count; j++)
+            {
+                for (int i = 0; i < numberOfConstraints; i++)
+                {
+                    B[i, j] = initialTableau.CanonicalForm(true)[i + 1, basicVariablePositions[j]];
+                }
+            }
+
+            return B;
+        }
         public static double[] Getb(TableauModel initialTableau)
         {
             int numberOfConstraints = initialTableau.NumberOfConstraints();
@@ -93,10 +110,34 @@ namespace LPR_App
             return inverseMatrix.ToArray();
         }
 
+        public static double[,] GetBInverse(TableauModel initialTableau)
+        {
+            double[,] B = GetB(initialTableau);
+            var matrix = Matrix<double>.Build.DenseOfArray(B);
+
+            // Invert the matrix
+            var inverseMatrix = matrix.Inverse();
+
+
+            return inverseMatrix.ToArray();
+        }
+
+
+
         public static double[] GetDotProduct(TableauModel initialTableau, TableauModel optimalTableau)
         {
             double[] cbv = GetCBV(initialTableau, optimalTableau);
             double[,] BInverse = GetBInverse(initialTableau, optimalTableau);
+
+            var BInverseMatrix = Matrix<double>.Build.DenseOfArray(BInverse);
+            var cbvVector = Vector<double>.Build.DenseOfArray(cbv);
+            var dotProductVector = cbvVector * BInverseMatrix;
+
+            return dotProductVector.AsArray();
+        }
+        public static double[] GetDotProduct(TableauModel initialTableau, TableauModel optimalTableau, double[] cbv, double[,] BInverse)
+        {
+            
 
             var BInverseMatrix = Matrix<double>.Build.DenseOfArray(BInverse);
             var cbvVector = Vector<double>.Build.DenseOfArray(cbv);
@@ -126,22 +167,28 @@ namespace LPR_App
             return Si;
         }
 
+        public static double[] GetAi(TableauModel initialTableau, int variableIndex)
+        {
+            int numberOfConstraints = initialTableau.NumberOfConstraints();
+
+            double[] Ai = new double[numberOfConstraints];
+            for (int i = 0; i < numberOfConstraints; i++)
+            {
+                Ai[i] = initialTableau.CanonicalForm(true)[i + 1, variableIndex];
+            }
+            return Ai;
+        }
+
         public static double CalculateNewObjectiveCoefficient(TableauModel initialTableau, TableauModel optimalTableau, int variableIndex, double newCoefficient)
         {
 
             // Step 1: Get the current CBV, B inverse, and the A_i column
             double[] cbv = GetCBV(initialTableau, optimalTableau);
             double[,] BInverse = GetBInverse(initialTableau, optimalTableau);
-            int numberOfConstraints = optimalTableau.NumberOfConstraints();
-
-
 
             // Step 2: Extract the A_i column from the initial tableau
-            double[] Ai = new double[numberOfConstraints];
-            for (int i = 0; i < numberOfConstraints; i++)
-            {
-                Ai[i] = initialTableau.CanonicalForm(true)[i + 1, variableIndex];
-            }
+            double[] Ai = GetAi(initialTableau, variableIndex);
+            
 
             // Step 3: Convert BInverse and Ai into MathNet vectors/matrices
             var BInverseMatrix = Matrix<double>.Build.DenseOfArray(BInverse);
@@ -157,6 +204,28 @@ namespace LPR_App
 
             return newObjectiveCoefficient;
         }
+        public static double CalculateNewObjectiveCoefficient(TableauModel initialTableau, TableauModel optimalTableau, int variableIndex, double newCoefficient, double[] cbv, double[,] BInverse)
+        {
+
+            // Step 2: Extract the A_i column from the initial tableau
+            double[] Ai = GetAi(initialTableau, variableIndex);
+
+
+            // Step 3: Convert BInverse and Ai into MathNet vectors/matrices
+            var BInverseMatrix = Matrix<double>.Build.DenseOfArray(BInverse);
+            var AiVector = Vector<double>.Build.DenseOfArray(Ai);
+
+            // Step 4: Calculate (CBV * B-1 * Ai)
+            var cbvVector = Vector<double>.Build.DenseOfArray(cbv);
+            var result = cbvVector * BInverseMatrix * AiVector;
+
+            // Step 5: Subtract the original objective coefficient
+            double Ci = newCoefficient;
+            double newObjectiveCoefficient = result - Math.Abs( Ci);
+
+            return newObjectiveCoefficient;
+        }
+        
         public static double CalculateNewObjectiveCoefficient(TableauModel initialTableau, TableauModel optimalTableau, int variableIndex, double newCoefficient, double[] cbv)
         {
 

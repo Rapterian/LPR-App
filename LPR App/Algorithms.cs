@@ -12,7 +12,7 @@ namespace LPR_App
     {
         public static TableauModel PrimalSimplex(TableauModel tableau)
         {
-            if(tableau.NumberOfMinConstraints != 0)
+            if (tableau.NumberOfMinConstraints != 0)
             {
                 throw new Exception("Primal Simplex only works with maximization problems");
             }
@@ -22,7 +22,7 @@ namespace LPR_App
             int iteration = 0;
             while (true)
             {
-                
+
                 //step 1 - check for optimality
                 int pivotColumn = -1;
 
@@ -95,9 +95,203 @@ namespace LPR_App
 
         }
 
-        public static void RevisedPrimalSimplex()
+        public static TableauModel PrimalSimplexRevised(TableauModel tableau)
         {
-            //Caitlin
+            TableauModel tableau2 = new TableauModel(tableau.CanonicalForm(true).Clone() as double[,], tableau.NumberOfVariables, tableau.NumberOfConstraints());
+            double[,] tableauC = new double[tableau.CanonicalForm(true).GetLength(0), tableau.CanonicalForm(true).GetLength(1)];
+            
+            int itteration = 0;
+            var BInverse = Matrix<double>.Build.DenseOfArray(SensitivityAnalysis.GetBInverse(tableau, tableau2));
+            var B = SensitivityAnalysis.GetB(tableau, tableau2);
+            var CBV = SensitivityAnalysis.GetCBV(tableau, tableau2);
+            List<double> exitVariablesPositions = new List<double>();
+
+            while (true)
+            {
+                double[,] tableauTest = tableau.CanonicalForm(true);
+                int rows = BInverse.RowCount;
+                int columns = BInverse.ColumnCount;
+
+                double[,] BInverseAsArray = new double[rows, columns];
+                for (int i = 0; i < rows; i++)
+                {
+                    for (int j = 0; j < columns; j++)
+                    {
+                        BInverseAsArray[i, j] = BInverse[i, j];
+                    }
+                }
+                
+                var CBVdotB = SensitivityAnalysis.GetDotProduct(tableau, tableau2, CBV, BInverseAsArray);
+
+
+                for (int j = 0; j < tableau2.BasicVariablePos().Count; j++)
+                {
+                    int basicVariablePos = tableau2.BasicVariablePos()[j];
+
+                    tableauC[0, basicVariablePos] = CBVdotB[j];
+
+                    for (int i = 0; i < tableau2.NumberOfConstraints(); i++)
+                    {
+                        tableauC[i + 1, basicVariablePos] = BInverse[i, j];
+                    }
+                }
+
+                Dictionary<int, double> nonBasicVariableNewValue = new Dictionary<int, double>();
+
+
+                for (int i = 0; i < tableau2.nonBasicVariablePos().Count; i++)
+                {
+                    int nonBasicVariablePos = tableau2.nonBasicVariablePos()[i];
+
+                    nonBasicVariableNewValue.Add(nonBasicVariablePos, SensitivityAnalysis.CalculateNewObjectiveCoefficient(tableau, tableau2, nonBasicVariablePos, tableau2.CanonicalForm(itteration == 0)[0, nonBasicVariablePos],CBV,BInverseAsArray));
+
+                    tableauC[0, nonBasicVariablePos] = nonBasicVariableNewValue.ElementAt(i).Value;
+                }
+
+
+                int entryVariablePos = -1;
+                double minValue = double.MaxValue;
+
+                foreach (var kvp in nonBasicVariableNewValue)
+                {
+                    if (kvp.Value < minValue)
+                    {
+                        minValue = kvp.Value;
+                        entryVariablePos = kvp.Key;
+                    }
+                }
+
+                if (minValue >= 0)
+                {
+                    break;
+                }
+
+                var Ai = Vector<double>.Build.DenseOfArray(SensitivityAnalysis.GetAi(tableau, entryVariablePos));
+                var Bi = BInverse * Ai;
+
+                for (int i = 0; i < tableau2.NumberOfConstraints(); i++)
+                {
+                    tableauC[i + 1, entryVariablePos] = Bi[i];
+                }
+
+                var RHS = BInverse * Vector<double>.Build.DenseOfArray(SensitivityAnalysis.GetAi(tableau, tableau2.NumberOfConstraints() + tableau2.NumberOfVariables));
+
+                for (int i = 0; i < tableau2.NumberOfConstraints(); i++)
+                {
+                    tableauC[i + 1, tableau2.NumberOfVariables + tableau2.NumberOfConstraints()] = RHS[i];
+                }
+
+                TableauModel tableauModel = new TableauModel(tableauC, tableau2.NumberOfVariables, tableau2.NumberOfConstraints());
+                tableauModel.ToConsole($"Iteration {itteration++}", false);
+
+               
+                List<double> ratios = new List<double>();
+
+                for (int i = 0; i < tableau2.NumberOfConstraints(); i++)
+                {
+                    if (Bi[i] > 0)
+                    {
+                        ratios.Add(RHS[i] / Bi[i]);
+                    }
+                    else
+                    {
+                        ratios.Add(double.MaxValue);
+                    }
+                }
+
+                int exitVariablePos = ratios.IndexOf(ratios.Min());
+                exitVariablesPositions.Add(exitVariablePos);
+
+                foreach (int pos in exitVariablesPositions)
+                {
+                    BInverse[pos, pos] = 1 / Bi[pos] * BInverse[pos, pos];
+
+                    for (int i = 0; i < tableau2.NumberOfConstraints(); i++)
+                    {
+                        if (i != pos)
+                        {
+                            BInverse[i, pos] = BInverse[i, pos] - Bi[i] / Bi[pos];
+                        }
+                    } 
+                }
+
+                int nonBasicVariablePos2 = tableau.nonBasicVariablePos(true)[entryVariablePos];
+                CBV[exitVariablePos] = tableau.CanonicalForm(true)[0, nonBasicVariablePos2];
+
+
+                for (int i = 0; i < tableau2.NumberOfConstraints() + 1; i++)
+                {
+                    if (i != exitVariablePos)
+                    {
+                        tableauC[i, entryVariablePos] = 0;
+                    }
+                    else
+                    {
+                        tableauC[i, entryVariablePos] = 1;
+                    }
+                }
+
+                for (int i = 0; i < tableau2.NumberOfConstraints() + 1; i++)
+                {
+                    if (i != entryVariablePos)
+                    {
+                        tableauC[exitVariablePos, i] = 0;
+                    }
+                    else
+                    {
+                        tableauC[exitVariablePos, i] = 1;
+                    }
+                }
+
+                for (int i = 1; i < tableau2.NumberOfConstraints() + 1; i++)
+                {
+                    for (int j = tableau2.NumberOfVariables; j < tableau2.NumberOfConstraints()+ tableau2.NumberOfVariables; j++)
+                    {
+                        tableauC[i, j] = BInverse[i-1, j - tableau2.NumberOfVariables];
+
+                    }
+                }
+
+                tableau2 = new TableauModel(tableauC, tableau2.NumberOfVariables, tableau2.NumberOfConstraints());
+            }
+
+            return tableau2;
+
+        }
+
+        // Helper function to compute dot product
+        private static double DotProduct(double[] vector1, double[] vector2)
+        {
+            double result = 0;
+            for (int i = 0; i < vector1.Length; i++)
+            {
+                result += vector1[i] * vector2[i];
+            }
+            return result;
+        }
+
+        // Helper function to get a column from the tableau
+        private static double[] GetColumn(double[,] tableau, int columnIndex)
+        {
+            int rows = tableau.GetLength(0);
+            double[] column = new double[rows];
+            for (int i = 0; i < rows; i++)
+            {
+                column[i] = tableau[i, columnIndex];
+            }
+            return column;
+        }
+
+        // Helper function to get a row from the tableau
+        private static double[] GetRow(double[,] tableau, int rowIndex)
+        {
+            int columns = tableau.GetLength(1);
+            double[] row = new double[columns];
+            for (int j = 0; j < columns; j++)
+            {
+                row[j] = tableau[rowIndex, j];
+            }
+            return row;
         }
 
         void BranchBoundSimplex()
@@ -164,7 +358,7 @@ namespace LPR_App
                 branches = branchesWithSubProblems;
             }
 
-            
+
 
 
         }
@@ -201,7 +395,7 @@ namespace LPR_App
 
             foreach (BranchAndBoundItemModel item in result)
             {
-                if (weightLimit>0)
+                if (weightLimit > 0)
                 {
                     if (weightLimit - item.Weight >= 0)
                     {
@@ -223,7 +417,7 @@ namespace LPR_App
 
             result.AddRange(locked);
 
-            if (!hasSubProblem && weightLimit>=0)
+            if (!hasSubProblem && weightLimit >= 0)
             {
                 Console.WriteLine("");
                 double totalValue = 0;
@@ -232,7 +426,7 @@ namespace LPR_App
                     totalValue += item.IsSelected * item.Value;
                 }
                 Console.WriteLine($"Candidate solution:" + totalValue);
-                Console.WriteLine("Remaining weight:"+weightLimit);
+                Console.WriteLine("Remaining weight:" + weightLimit);
                 displayKnapsackTable(result);
             }
 
@@ -310,16 +504,16 @@ namespace LPR_App
 
             double[,] result = new double[numVariables, 3]; //column 1: x-variable; column 2: RHS value; column 3: constraint row
 
-            for (int j = 0; j < numVariables; j++) 
+            for (int j = 0; j < numVariables; j++)
             {
                 int oneCount = 0;
                 double valueInLastColumn = 0;
                 int rowIndex = 0;
 
                 //checking if BV
-                for (int i = 0; i < rows; i++) 
+                for (int i = 0; i < rows; i++)
                 {
-                    if (solution[i, j] == 1) 
+                    if (solution[i, j] == 1)
                     {
                         oneCount++;
                         rowIndex = i;
@@ -328,13 +522,13 @@ namespace LPR_App
                 }
 
                 //if BV then updates result matrix with RHS value in the same row
-                if (oneCount == 1) 
+                if (oneCount == 1)
                 {
                     result[j, 0] = j + 1;
                     result[j, 1] = valueInLastColumn;
                     result[j, 2] = rowIndex + 1;
-                } 
-                else 
+                }
+                else
                 { //otherwise, updates result matrix with 0 as variable value
                     result[j, 0] = j + 1;
                     result[j, 1] = 0;
@@ -537,7 +731,7 @@ namespace LPR_App
                     Console.WriteLine("The problem is unbounded.");
                     break;
                 }
-                
+
                 // step 3 - pivot
                 Pivot(tableau, leavingRow, enteringColumn);
 
@@ -654,9 +848,9 @@ namespace LPR_App
             //testing
             //for (int i = 0; i < previousTable.GetLength(0); i++)
             //{
-            //    for (int j = 0; j < previousTable.GetLength(1); j++)
+            //    for (int i = 0; i < previousTable.GetLength(1); i++)
             //    {
-            //        Console.Write(previousTable[i, j] + "\t");
+            //        Console.Write(previousTable[i, i] + "\t");
             //    }
             //        Console.WriteLine();
             //}
@@ -743,7 +937,7 @@ namespace LPR_App
             }
         }
 
-        
+
 
     }
 }
