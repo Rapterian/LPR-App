@@ -94,7 +94,49 @@ namespace LPR_App
                 Console.Write(item + "\t");
             }
             Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine("===========");
+            Console.WriteLine("RHS ranges:");
+            Console.WriteLine("===========");
+            double[] rhsRanges;
+            for (int i = 0; i < model.NumberOfConstraints(); i++)
+            {
+                // Calculate RHS ranges for constraint i
+                rhsRanges = SensitivityAnalysis.rangeRHS(initialModel, model, i);
 
+                // Display the RHS range for the current constraint
+                Console.WriteLine($"RHS {i}:\nUpper Range: {rhsRanges[0]}\nLower Range: {rhsRanges[1]}\n");
+            }
+
+            Console.WriteLine("=============================");
+            Console.WriteLine("Objective Coefficient Ranges:");
+            Console.WriteLine("=============================");
+            for (int i = 0; i < model.NumberOfVariables; i++)
+            {
+                double[] objectiveRanges;
+                if (model.BasicVariablePos().Contains(i))
+                {
+                    objectiveRanges = SensitivityAnalysis.rangeObjectiveCoefficient(initialModel, model, i,false);
+                }
+                else
+                {
+                    objectiveRanges = SensitivityAnalysis.rangeObjectiveCoefficient(initialModel, model, i, true);
+                }  
+                
+                Console.WriteLine($"Objective Coefficient {i}:\nUpper Range: {objectiveRanges[0]}\nLower Range: {objectiveRanges[1]}\n");
+            }
+
+            Console.WriteLine("==============================");
+            Console.WriteLine("Constraint Coefficient Ranges:");
+            Console.WriteLine("==============================");
+            for (int i = 0; i < model.NumberOfConstraints(); i++)
+            {
+                for (int j = 0; j < model.NumberOfVariables; j++)
+                {
+                    double[] constraintRanges = SensitivityAnalysis.rangeConstraintCoefficient(initialModel, model, i, j);
+                    Console.WriteLine($"Constraint {i}, Variable {j}:\nUpper Range: {constraintRanges[0]}\nLower Range: {constraintRanges[1]}\n");
+                }
+            }
 
             Console.ReadLine();
 

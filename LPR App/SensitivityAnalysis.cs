@@ -315,7 +315,7 @@ namespace LPR_App
             return Algorithms.PrimalSimplex(new TableauModel(newTableau, optimalTableau.NumberOfVariables, optimalTableau.NumberOfMaxConstraints, optimalTableau.NumberOfMinConstraints)).CanonicalForm(false);
         }
 
-        public static double[] rangeObjectiveCoefficient(TableauModel initialTableau, TableauModel optimalTableau, int variableIndex, double newCoefficient, bool isBasic)
+        public static double[] rangeObjectiveCoefficient(TableauModel initialTableau, TableauModel optimalTableau, int variableIndex, bool isBasic)
         {
             double upperBound = double.PositiveInfinity;
             double lowerBound = double.NegativeInfinity;
@@ -341,14 +341,14 @@ namespace LPR_App
             var result = cbvVector * BInverseMatrix * AiVector;
 
             double originalCoefficient = initialTableau.CanonicalForm(true)[0, variableIndex];
-            double coefficientDifference = newCoefficient - originalCoefficient;
+            double coefficientDifference = optimalTableau.CanonicalForm(true)[0, variableIndex] - originalCoefficient;
 
             if (isBasic)
             {
                 // For basic variables, we need to adjust CBV and calculate new bounds
 
                 // Calculate the new Si (reduced cost vector)
-                var changedCBV = ChangeCBV(initialTableau, optimalTableau, variableIndex, newCoefficient);
+                var changedCBV = ChangeCBV(initialTableau, optimalTableau, variableIndex, optimalTableau.CanonicalForm(true)[0, variableIndex]);
                 var Si = GetSi(initialTableau, optimalTableau, changedCBV);
 
                 // Determine the upper and lower bounds by analyzing the impact of the change on all other variables
@@ -399,7 +399,7 @@ namespace LPR_App
             return Algorithms.PrimalSimplex(new TableauModel(newTableau, optimalTableau.NumberOfVariables, optimalTableau.NumberOfMaxConstraints, optimalTableau.NumberOfMinConstraints)).CanonicalForm(false);
         }
 
-        public static double[] rangeConstraintCoefficient(TableauModel initialTableau, TableauModel optimalTableau, int constraintIndex, int variableIndex, double newCoefficient)
+        public static double[] rangeConstraintCoefficient(TableauModel initialTableau, TableauModel optimalTableau, int constraintIndex, int variableIndex)
         {
             double upperBound = double.PositiveInfinity;
             double lowerBound = double.NegativeInfinity;
@@ -417,7 +417,7 @@ namespace LPR_App
 
             // Calculate the current value of the tableau entry
             double currentCoefficient = initialTableau.CanonicalForm(true)[constraintIndex + 1, variableIndex];
-            double coefficientDifference = newCoefficient - currentCoefficient;
+            double coefficientDifference = optimalTableau.CanonicalForm(true)[constraintIndex + 1, variableIndex] - currentCoefficient;
 
             // Modify the A matrix to reflect the new coefficient
             double[] modifiedAi = new double[numberOfConstraints];
@@ -425,7 +425,7 @@ namespace LPR_App
             {
                 modifiedAi[i] = initialTableau.CanonicalForm(true)[i + 1, variableIndex];
             }
-            modifiedAi[constraintIndex] = newCoefficient;
+            modifiedAi[constraintIndex] = optimalTableau.CanonicalForm(true)[constraintIndex + 1, variableIndex];
 
             // Compute the impact on the right-hand side (b')
             var BInverseMatrix = Matrix<double>.Build.DenseOfArray(BInverse);
@@ -526,7 +526,7 @@ namespace LPR_App
             }
 
             // Convert back the lower and upper bounds based on the original RHS
-            double originalRHS = initialTableau.CanonicalForm(true)[constraintIndex + 1, 0];
+            double originalRHS = initialTableau.CanonicalForm(true)[0, constraintIndex + 1];
             lowerBound = originalRHS - lowerBound;
             upperBound = originalRHS - upperBound;
 
