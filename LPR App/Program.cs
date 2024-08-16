@@ -1,4 +1,20 @@
+﻿using Sytem;
 ﻿using LPR_App;
+
+namespace LPR_App
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Console.WriteLine("Welcome to the Linear Programming Solver!");
+
+            // Display menu options
+            Console.WriteLine("1. Solve using Primal Simplex Algorithm");
+            Console.WriteLine("2. Solve using Branch & Bound Simplex Algorithm");
+            Console.WriteLine("3. Solve using Cutting Plane Algorithm");
+            Console.WriteLine("4. Perform Sensitivity Analysis");
+            Console.WriteLine("5. Exit");
 
 double[,] A = {
                 { 1, 1 },
@@ -18,6 +34,8 @@ model.ToConsole("Initial Tableau:",true);
 model = Algorithms.PrimalSimplex(model);
 model.ToConsole("Optimal Solution:", false);
 
+//Branch and Bound Simplex
+Algorithms.BranchBoundSimplex(A, b, c);
 //Cutting Plane Simplex
 Algorithms.CuttingPlane(A, b, c);
 
