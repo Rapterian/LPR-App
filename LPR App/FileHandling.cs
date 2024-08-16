@@ -6,68 +6,50 @@ using System.Threading.Tasks;
 
 namespace LPR_App
 {
-     public class FileHandler
+    public class FileHandling
     {
-        public static double[,] ReadMatrixFromCsv(string filePath)
-        {
-            var lines = File.ReadAllLines(filePath);
-            int rows = lines.Length;
-            int columns = lines[0].Split(',').Length;
-            double[,] matrix = new double[rows, columns];
-
-            for (int i = 0; i < rows; i++)
-            {
-                var values = lines[i].Split(',');
-                for (int j = 0; j < columns; j++)
-                {
-                    matrix[i, j] = double.Parse(values[j]);
-                }
-            }
-
-            return matrix;
-        }
-
-        public static void WriteMatrixToCsv(string filePath, double[,] matrix)
+        public static void WriteToFile(string filePath, TableauModel model)
         {
             using (StreamWriter writer = new StreamWriter(filePath))
             {
-                int rows = matrix.GetLength(0);
-                int columns = matrix.GetLength(1);
+                // Write the objective function
+                writer.WriteLine(string.Join(" ", model.ObjectiveFunction));
 
-                for (int i = 0; i < rows; i++)
+                // Write the constraints
+                for (int i = 0; i < model.NumberOfMaxConstraints; i++)
                 {
-                    string[] values = new string[columns];
-                    for (int j = 0; j < columns; j++)
+                    for (int j = 0; j < model.NumberOfVariables; j++)
                     {
-                        values[j] = matrix[i, j].ToString();
+                        writer.Write(model.MaxConstraintMatrix[i, j] + " ");
                     }
-                    writer.WriteLine(string.Join(",", values));
+                    writer.WriteLine(model.RightHandSide[i + 1]);
                 }
             }
         }
 
-        public static double[] ReadArrayFromCsv(string filePath)
+        public static TableauModel ReadFromFile(string filePath)
         {
-            var lines = File.ReadAllLines(filePath);
-            double[] array = new double[lines.Length];
+            string[] lines = File.ReadAllLines(filePath);
+            string[] objFuncTokens = lines[0].Split(' ');
 
-            for (int i = 0; i < lines.Length; i++)
+            double[] objectiveFunction = Array.ConvertAll(objFuncTokens, double.Parse);
+            int numberOfVariables = objectiveFunction.Length;
+            int numberOfConstraints = lines.Length - 1;
+
+            double[,] constraintMatrix = new double[numberOfConstraints, numberOfVariables];
+            double[] rightHandSide = new double[numberOfConstraints + 1];
+
+            for (int i = 1; i <= numberOfConstraints; i++)
             {
-                array[i] = double.Parse(lines[i]);
-            }
-
-            return array;
-        }
-
-        public static void WriteArrayToCsv(string filePath, double[] array)
-        {
-            using (StreamWriter writer = new StreamWriter(filePath))
-            {
-                foreach (var value in array)
+                string[] constraintTokens = lines[i].Split(' ');
+                for (int j = 0; j < numberOfVariables; j++)
                 {
-                    writer.WriteLine(value);
+                    constraintMatrix[i - 1, j] = double.Parse(constraintTokens[j]);
                 }
+                rightHandSide[i] = double.Parse(constraintTokens[numberOfVariables]);
             }
+
+            return new TableauModel(constraintMatrix, rightHandSide, objectiveFunction);
         }
     }
 }
