@@ -10,6 +10,19 @@ namespace LPR_App
 {
     internal class Algorithms
     {
+        //private static List<string> output = new List<string>();
+
+        //private static void Log(string message)
+        //{
+        //    output.Add(message);
+        //    Console.WriteLine(message);
+        //}
+
+        //public static void SaveLogToFile(string fileName)
+        //{
+        //    FileHandling.WriteToFile(fileName, output);
+        //}
+
         public static TableauModel PrimalSimplex(TableauModel tableau)
         {
             if (tableau.NumberOfMinConstraints != 0)
@@ -46,6 +59,7 @@ namespace LPR_App
                 }
                 TableauModel tableauIteration = new TableauModel(tableauC, numberOfVariables, numberOfConstraints);
                 tableauIteration.ToConsole($"Iteration {iteration}", false);
+
 
                 //step 2 - find pivot row
                 int pivotRow = -1;
@@ -90,6 +104,8 @@ namespace LPR_App
             }
 
             TableauModel tableauModel = new TableauModel(tableauC, numberOfVariables, numberOfConstraints);
+
+            //SaveLogToFile("PrimalSimplex.txt");
 
             return tableauModel;
 
@@ -294,15 +310,239 @@ namespace LPR_App
             return row;
         }
 
-        void BranchBoundSimplex()
+        ///<summary>
+        /// This function will create the new constraint
+        /// </summary>
+        /// <param name="tableau"></param>
+        /// <param name="selectedConstraint"></param>
+        /// <param name="numOfCoefficients"></param>
+        /// <param name="isUpperBound"></param>
+        /// <returns>an array containing the new constraint</returns>
+        public static double[] CreateNewConstraint(double[,] tableau, int selectedConstraint, int numOfCoefficients, bool isUpperBound)
         {
-            //Caitlin
+            double[] result = new double[tableau.GetLength(1) + 1];
+            double[] newConstraint = new double[tableau.GetLength(1) + 1];
+            double roundedRHS;
+            double calculatedRHS;
+
+            for (int j = 0; j < newConstraint.Length; j++)
+            {
+                // populating newConstraint array with 0's
+                newConstraint[j] = 0;
+            }
+
+            // creating constraint for sub-problem 1
+            if (!isUpperBound)
+            {
+                for (int j = 0; j < numOfCoefficients; j++)
+                {
+                    // updating values of x-variables
+                    newConstraint[j] = tableau[selectedConstraint, j];
+                }
+
+                // calculating the RHS (lower value)
+                roundedRHS = Math.Floor(tableau[selectedConstraint, tableau.GetLength(1) - 1]);
+                newConstraint[tableau.GetLength(1)] = roundedRHS;
+                calculatedRHS = Math.Round((tableau[selectedConstraint, tableau.GetLength(1) - 1] - roundedRHS) * -1, 3);
+
+                // updating the RHS (lower value)
+                result[tableau.GetLength(1)] = calculatedRHS;
+
+                for (int j = 0; j < tableau.GetLength(1); j++)
+                {
+                    result[j] = Math.Round((tableau[selectedConstraint, j] - newConstraint[j]) * -1, 3);
+                }
+
+                // updating value of slack variable
+                result[tableau.GetLength(1) - 1] = 1;
+            }
+
+            // creating constraint for sub-problem 2
+            if (isUpperBound)
+            {
+                for (int j = 0; j < numOfCoefficients; j++)
+                {
+                    // updating values of x-variables
+                    newConstraint[j] = tableau[selectedConstraint, j];
+                }
+
+                // calculating the RHS (upper value)
+                roundedRHS = Math.Ceiling(tableau[selectedConstraint, tableau.GetLength(1) - 1]);
+                newConstraint[tableau.GetLength(1)] = roundedRHS;
+                calculatedRHS = Math.Round((tableau[selectedConstraint, tableau.GetLength(1) - 1] - roundedRHS), 3);
+
+                // updating the RHS (upper value)
+                result[tableau.GetLength(1)] = calculatedRHS;
+
+                for (int j = 0; j < tableau.GetLength(1); j++)
+                {
+                    result[j] = Math.Round(tableau[selectedConstraint, j] - newConstraint[j], 3);
+                }
+
+                // updating value of excess variable
+                result[tableau.GetLength(1) - 1] = 1;
+            }
+
+            return result;
+        }
+
+        ///<summary>
+        /// This function will create a new table with the new added constraint
+        /// </summary>
+        /// <param name="previousTable"></param>
+        /// <param name="constraintRow"></param>
+        /// <param name="numCoefficients"></param>
+        /// <param name="isUpper"></param>
+        /// <param name="heading"></param>
+        /// <returns>a matrix containing the new table with the new constraint</returns>
+        public static double[,] CreateNewTable(double[,] previousTable, int constraintRow, int numCoefficients, bool isUpper, string heading)
+        {
+            double[] newConstraint = CreateNewConstraint(previousTable, constraintRow, numCoefficients, isUpper);
+            double[,] newTable = new double[previousTable.GetLength(0) + 1, previousTable.GetLength(1) + 1];
+            int lastRow = newTable.GetLength(0) - 1;
+            int secondLastColumn = previousTable.GetLength(1) - 1;
+            int lastColumn = previousTable.GetLength(1);
+            double[] rhsValues = new double[previousTable.GetLength(0)];
+
+            for (int i = 0; i < previousTable.GetLength(0); i++)
+            {
+                rhsValues[i] = previousTable[i, secondLastColumn];
+            }
+
+            // adding original optimal values
+            for (int i = 0; i < previousTable.GetLength(0); i++)
+            {
+                for (int j = 0; j < previousTable.GetLength(1); j++)
+                {
+                    newTable[i, j] = previousTable[i, j];
+                    newTable[i, secondLastColumn] = 0;
+                }
+            }
+
+            // adding rhs values
+            for (int i = 0; i < previousTable.GetLength(0); i++)
+            {
+                newTable[i, lastColumn] = rhsValues[i];
+            }
+
+            // adding new constraint
+            for (int j = 0; j < newTable.GetLength(1); j++)
+            {
+                newTable[lastRow, j] = newConstraint[j];
+            }
+
+            int numVariables = numCoefficients;
+            int numConstraints = newTable.GetLength(0) - 1;
+
+            TableauModel model1 = new TableauModel(newTable, numVariables, numConstraints);
+
+            // displaying table with added constraint
+            Console.WriteLine("Adding new constraint");
+            model1.ToConsole($"Sub-Problem {heading}", false);
+
+            double[,] matrix1 = model1.CanonicalForm(false);
+
+            // performing dual simplex on table with new constraint
+            double[,] table = DualSimplex(matrix1, numVariables, numConstraints);
+
+            TableauModel model2 = new TableauModel(table, numVariables, numConstraints);
+
+            // displaying table after dual simplex
+            model2.ToConsole($"Sub-Problem {heading}", false);
+
+            double[,] afterPivot = DualSimplex(matrix1, numVariables, numConstraints);
+
+            return afterPivot;
+        }
+
+        ///<summary>
+        /// This function will get the z value of a table
+        /// </summary>
+        /// <param name="answerMatrix"></param>
+        /// <returns>z value</returns>
+        public static double GetZValue(double[,] answerMatrix)
+        {
+            int numColumns = answerMatrix.GetLength(1);
+
+            double zValue = answerMatrix[0, numColumns - 1];
+
+            return zValue;
+        }
+
+        ///<summary>
+        /// This function will perform the Branch and Bound Simplex Algorithm
+        /// </summary>
+        /// <param name="constraintMatrix"></param>
+        /// <param name="RHS"></param>
+        /// <param name="stCoefficients"></param>
+        public static void BranchBoundSimplex(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
+        {
+            Console.WriteLine("You have chosen to solve the problem with the Branch & Bound Simplex Algorithm");
+            Console.WriteLine("First, we must find the optimal table using the Primal Simplex Algorithm");
+
+            // performing primal simplex
+            TableauModel model = new TableauModel(constraintMatrix, RHS, stCoefficients);
+            model.ToConsole("Initial Tableau", true);
+            model = PrimalSimplex(model);
+            model.ToConsole("Primal Simplex Optimal Solution", false);
+
+            Console.WriteLine();
+            Console.WriteLine("Now that we have the Primal Simplex optimal table, add new branches with new constraints until all sub-problems have been found");
+
+            double[,] primalOptimal = model.CanonicalForm(false);
+
+            // storing the best candidate found
+            List<double[,]> feasibleSolutions = new List<double[,]>();
+            Stack<(string, double[,])> subProblems = new Stack<(string, double[,])>();
+            subProblems.Push(("0", primalOptimal));
+
+            while (subProblems.Count > 0)
+            {
+                var (parentLabel, currentTable) = subProblems.Pop();
+                double[,] variableAnswers = GetXValues(stCoefficients.Length, currentTable);
+                bool[] allIntegers = AllIntegers(variableAnswers);
+                bool proceed = !allIntegers.All(x => x);
+
+                // checking if all variables are integers
+                if (!proceed)
+                {
+                    feasibleSolutions.Add(currentTable);
+                    continue;
+                }
+
+                // selecting the constraint row to branch on
+                int selectedConstraintRow = (int)SelectConstraint(variableAnswers);
+                Console.WriteLine();
+
+                // creating new tables for each sub-problem
+                double[,] subProblemConstraintMatrix1 = CreateNewTable(primalOptimal, selectedConstraintRow, stCoefficients.Length, false, "1");
+                double[,] subProblemConstraintMatrix2 = CreateNewTable(primalOptimal, selectedConstraintRow, stCoefficients.Length, true, "2");
+
+                var subProblemCounter = 1;
+                subProblems.Push(($"{parentLabel}.{subProblemCounter}", subProblemConstraintMatrix1));
+                subProblemCounter++;
+                subProblems.Push(($"{parentLabel}.{subProblemCounter}", subProblemConstraintMatrix2));
+            }
+
+            // if at least one feasible solution was found, finding the best one
+            if (feasibleSolutions.Count > 0)
+            {
+                //order feasibleSolutions by z value in descending order
+                var bestSolution = feasibleSolutions.OrderByDescending(GetZValue).First();
+
+                // printing feasible solution
+                TableauModel optimalTable = new TableauModel(bestSolution, stCoefficients.Length, bestSolution.GetLength(0) - 1);
+                optimalTable.ToConsole("Optimal Solution", false);
+                Console.WriteLine($"Optimal z value = {GetZValue(bestSolution)}");
+            }
+            else
+            {
+                Console.WriteLine("No feasible integer solution found.");
+            }
         }
 
         public static void BranchBoundKnapsack(double[] value, double[] weight, double weightLimit)
         {
-
-            //Johannes
             Dictionary<List<BranchAndBoundItemModel>, bool> branches = new Dictionary<List<BranchAndBoundItemModel>, bool>();
 
             List<BranchAndBoundItemModel> items = new List<BranchAndBoundItemModel>();
@@ -340,9 +580,6 @@ namespace LPR_App
                     if (branches[key] == false)
                     {
                         List<BranchAndBoundItemModel> parentBranch = solveBranch(key, weightLimit);
-
-
-
                         foreach (var item in parentBranch)
                         {
                             if (item.IsSelected != 0 && item.IsSelected != 1)
@@ -357,9 +594,6 @@ namespace LPR_App
 
                 branches = branchesWithSubProblems;
             }
-
-
-
 
         }
 
@@ -492,7 +726,6 @@ namespace LPR_App
         /// <summary>
         /// This function will link x-variables with their respective RHS values and constraint rows
         /// </summary>
-        /// <param name="tableau"></param>
         /// <param name="numVariables"></param>
         /// <param name="solution"></param>
         /// <returns>matrix with x-variable, row number and variable value</returns>
@@ -502,13 +735,14 @@ namespace LPR_App
             int columns = solution.GetLength(1);
             int rhsColumn = columns - 1;
 
-            double[,] result = new double[numVariables, 3]; //column 1: x-variable; column 2: RHS value; column 3: constraint row
+            double[,] result = new double[numVariables, 3]; // column 1: x-variable; column 2: RHS value; column 3: constraint row
 
             for (int j = 0; j < numVariables; j++)
             {
                 int oneCount = 0;
                 double valueInLastColumn = 0;
                 int rowIndex = 0;
+
 
                 //checking if BV
                 for (int i = 0; i < rows; i++)
@@ -521,12 +755,14 @@ namespace LPR_App
                     }
                 }
 
-                //if BV then updates result matrix with RHS value in the same row
-                if (oneCount == 1)
+
+                // if BV then updates result matrix with RHS value in the same row
+                if (oneCount == 1) 
                 {
                     result[j, 0] = j + 1;
                     result[j, 1] = valueInLastColumn;
                     result[j, 2] = rowIndex + 1;
+
                 }
                 else
                 { //otherwise, updates result matrix with 0 as variable value
@@ -596,45 +832,29 @@ namespace LPR_App
         {
             double[] result = new double[coefficients.Length];
 
-            //testing
-            //Console.WriteLine("Hello");
-            //for (int i = 0; i < coefficients.Length; i++)
-            //{
-            //    Console.WriteLine(coefficients[i]);
-            //}
-            //Console.WriteLine("Hello");
-
             for (int i = 0; i < coefficients.Length; i++)
             {
                 double decimalPart = coefficients[i] - Math.Truncate(coefficients[i]);
 
-                // Check if the value is a whole number or 0
+                // checking if the value is a whole number or 0
                 if (decimalPart == 0)
                 {
                     result[i] = 0;
                 }
                 else
                 {
-                    // Handle positive values
+                    // handling positive values
                     if (coefficients[i] > 0)
                     {
                         result[i] = Math.Round(decimalPart * -1, 3);
                     }
-                    // Handle negative values
+                    // handling negative values
                     else
                     {
                         result[i] = Math.Round((1 - Math.Abs(decimalPart)) * -1, 3);
                     }
                 }
             }
-
-            //testing
-            //Console.WriteLine("Bye");
-            //for (int i = 0; i < result.Length; i++)
-            //{
-            //    Console.WriteLine(result[i]);
-            //}
-            //Console.WriteLine("Bye");
 
             return result;
         }
@@ -660,12 +880,6 @@ namespace LPR_App
 
             // add new slack variable
             result[result.Length - 1] = decimalConstraint[decimalConstraint.Length - 1];
-
-            //testing
-            //for (int i = 0; i < result.Length; i++)
-            //{
-            //    Console.WriteLine(result[i]);
-            //}
 
             return result;
         }
@@ -790,9 +1004,6 @@ namespace LPR_App
         /// <returns>a matrix containing the new table with the new constraint</returns>
         public static double[,] CreateNewTable(double[,] previousTable, int constraintRow, int columns, int numCoefficients)
         {
-            //testing
-            //Console.WriteLine("We will select constraint " + (double)constraintRow);
-
             // adding values of selected constraint row to array
             double[] constraintValues = new double[previousTable.GetLength(1)];
             for (int j = 0; j < previousTable.GetLength(1); j++)
@@ -800,18 +1011,7 @@ namespace LPR_App
                 constraintValues[j] = previousTable[constraintRow, j];
             }
 
-            //testing
-            //double[] coefficents = { 0.0, 1.4, -1.25, 0, 1, 1.4 };
-            //double[] newConstraint = CreateNewConstraint(coefficents, columns, numCoefficients);
-
             double[] newConstraint = CreateNewConstraint(constraintValues, columns, numCoefficients);
-
-            //testing
-            //for (int i = 0; i < newConstraint.Length; i++)
-            //{
-            //    Console.WriteLine(newConstraint[i]);
-            //}
-
             double[,] newTable = new double[previousTable.GetLength(0) + 1, previousTable.GetLength(1) + 1];
             int lastRow = newTable.GetLength(0) - 1;
             int secondLastColumn = previousTable.GetLength(1) - 1;
@@ -845,6 +1045,7 @@ namespace LPR_App
                 newTable[lastRow, j] = newConstraint[j];
             }
 
+
             //testing
             //for (int i = 0; i < previousTable.GetLength(0); i++)
             //{
@@ -855,20 +1056,21 @@ namespace LPR_App
             //        Console.WriteLine();
             //}
 
+
             int numVariables = numCoefficients;
             int numConstraints = newTable.GetLength(0) - 1;
 
-            TableauModel model1 = new TableauModel(newTable, numVariables, numConstraints);
             // displaying table with added constraint
-            model1.ToConsole("Adding New Constraint", false);
+            TableauModel model1 = new TableauModel(newTable, numVariables, numConstraints);
+            model1.ToConsole("Tableau With New Constraint", false);
 
             double[,] matrix1 = model1.CanonicalForm(false);
 
             // performing dual simplex on table with new constraint
             double[,] table = DualSimplex(matrix1, numVariables, numConstraints);
 
-            TableauModel model2 = new TableauModel(table, numVariables, numConstraints);
             // displaying table after dual simplex
+            TableauModel model2 = new TableauModel(table, numVariables, numConstraints);
             model2.ToConsole("Tableau After Pivoting", false);
 
             double[,] afterPivot = DualSimplex(matrix1, numVariables, numConstraints);
@@ -884,12 +1086,11 @@ namespace LPR_App
         /// <param name="stCoefficients"></param>
         public static void CuttingPlane(double[,] constraintMatrix, double[] RHS, double[] stCoefficients)
         {
-            Console.WriteLine("You've selected to solve with the Cutting Plane Simplex Algorithm...");
-            Console.WriteLine("First, we must find the optimal values with the Primal Simplex Algorithm:");
-
+            Console.WriteLine("You have chosen to solve the problem with the Cutting Plane Simplex Algorithm");
+            Console.WriteLine("First, we must find the optimal table using the Primal Simplex Algorithm");
             TableauModel model = new TableauModel(constraintMatrix, RHS, stCoefficients);
             model.ToConsole("Initial Tableau", true);
-            model = Algorithms.PrimalSimplex(model);
+            model = PrimalSimplex(model);
             model.ToConsole("Primal Simplex Optimal Solution", false);
 
             double[,] primalOptimal = model.CanonicalForm(false);
@@ -920,7 +1121,7 @@ namespace LPR_App
                     break;
                 }
 
-                // slecting the pivot row
+                // selecting the constraint row
                 int selectedConstraintRow = (int)SelectConstraint(variableAnswers);
                 Console.WriteLine();
 
@@ -933,11 +1134,9 @@ namespace LPR_App
 
             if (!proceed)
             {
-                Console.WriteLine("All x-variable optimal values are now integers. Cutting Plane Simplex Algorithm complete.");
+                Console.WriteLine("All x-variable optimal values are now integers. The Cutting Plane Simplex Algorithm is complete.");
             }
         }
-
-
 
     }
 }
