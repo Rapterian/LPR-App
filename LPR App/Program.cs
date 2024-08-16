@@ -9,6 +9,20 @@ namespace LPR_App
         {
             Console.WriteLine("Welcome to the Linear Programming Solver!");
 
+            // Display menu options
+            Console.WriteLine("1. Solve using Primal Simplex Algorithm");
+            Console.WriteLine("2. Solve using Branch & Bound Simplex Algorithm");
+            Console.WriteLine("3. Solve using Cutting Plane Algorithm");
+            Console.WriteLine("4. Perform Sensitivity Analysis");
+            Console.WriteLine("5. Exit");
+
+double[,] A = {
+                { 1, 1 },
+                { 2, 1 },
+                { 1, 3 }
+              };
+
+
             while (true)
             {
                 // Display menu options
