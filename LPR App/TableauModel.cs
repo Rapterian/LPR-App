@@ -1,25 +1,26 @@
-﻿using System;
+﻿using MathNet.Numerics.LinearAlgebra.Complex;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace LPR_App
 {
     public class TableauModel
     {
-      
+
         public double[,] MaxConstraintMatrix { get; set; }
         public double[,] MinConstraintMatrix { get; set; }
-        public double[,] Matrix { get; set; }
         public double[] RightHandSide { get; set; }
         public double[] ObjectiveFunction { get; set; }
 
         public int NumberOfVariables { get; set; }
         public int NumberOfMaxConstraints { get; set; }
         public int NumberOfMinConstraints { get; set; }
-        public int NumberOfConstraints { get; set; }
+
 
 
         public TableauModel(double[,] constraintMatrix, double[] rightHandSide, double[] objectiveFunction)
@@ -40,22 +41,22 @@ namespace LPR_App
             NumberOfVariables = ObjectiveFunction?.Length ?? 0;
             NumberOfMaxConstraints = 0;
 
-            
+
             if (maxConstraintMatrix != null && maxConstraintMatrix.GetLength(0) > 0)
             {
-                NumberOfMaxConstraints = maxConstraintMatrix.GetLength(0) ;
+                NumberOfMaxConstraints = maxConstraintMatrix.GetLength(0);
             }
 
             NumberOfMinConstraints = 0;
 
-           
+
             if (minConstraintMatrix != null && minConstraintMatrix.GetLength(0) > 0)
             {
-                NumberOfMinConstraints = minConstraintMatrix.GetLength(0) ;
+                NumberOfMinConstraints = minConstraintMatrix.GetLength(0);
             }
         }
 
-        public TableauModel(double[,] matrix, int numberOfVariables, int numberOfMaxConstraints,int numberOfMinConstraints)
+        public TableauModel(double[,] matrix, int numberOfVariables, int numberOfMaxConstraints, int numberOfMinConstraints)
         {
             int numberOfConstraints = numberOfMaxConstraints + numberOfMinConstraints;
             double[,] maxConstraintMatrix = new double[numberOfMaxConstraints, numberOfVariables + numberOfConstraints + 1];
@@ -122,7 +123,10 @@ namespace LPR_App
         }
 
 
-
+        public int NumberOfConstraints()
+        {
+            return NumberOfMaxConstraints + NumberOfMinConstraints;
+        }
         public double[,] CanonicalForm(bool initialTableau)
         {
             int numberOfConstraints = NumberOfMaxConstraints + NumberOfMinConstraints;
@@ -154,7 +158,7 @@ namespace LPR_App
                 {
                     for (int j = 0; j < NumberOfVariables; j++)
                     {
-                        tableau[i + 1, j] = MinConstraintMatrix[i- NumberOfMaxConstraints, j];//put the constraint matrix values in the tableau row by row
+                        tableau[i + 1, j] = MinConstraintMatrix[i - NumberOfMaxConstraints, j];//put the constraint matrix values in the tableau row by row
                     }
                     tableau[i + 1, NumberOfVariables + i] = -1; //excess Variables
                     tableau[i + 1, NumberOfVariables + numberOfConstraints] = RightHandSide[i + 1];//RHS values
@@ -169,12 +173,12 @@ namespace LPR_App
 
                 for (int i = 1; i < numberOfConstraints + 1; i++)
                 {
-                    
-                    for (int j = 0; j < numberOfConstraints + NumberOfVariables ; j++)
+
+                    for (int j = 0; j < numberOfConstraints + NumberOfVariables; j++)
                     {
-                        tableau[i, j] = MaxConstraintMatrix[i-1, j];
+                        tableau[i, j] = MaxConstraintMatrix[i - 1, j];
                     }
-                    
+
                 }
                 for (int i = 0; i < numberOfConstraints + 1; i++)
                 {
@@ -192,7 +196,7 @@ namespace LPR_App
         /// <param name="numberOfVariables"></param>
         /// <param name="numberOfConstraints"></param>
         /// <param name="name"></param>
-        public void ToConsole(String name, bool initialTableau)
+        public void ToConsole(string name, bool initialTableau)
         {
             int numberOfConstraints = NumberOfMaxConstraints + NumberOfMinConstraints;
             for (int i = 0; i < name.Length; i++)
@@ -237,91 +241,83 @@ namespace LPR_App
             ToConsole("", initialTableau);
         }
 
-        public double[,] nonBasicVariableMatrix()
+
+        public List<int> nonBasicVariablePos()
         {
-            int numberOfConstraints = NumberOfMaxConstraints + NumberOfMinConstraints;
-            int totalVariables = NumberOfVariables + numberOfConstraints; // Decision variables + Slack/excess variables
+            List<int> nonBasicVariablePos = new List<int>();
 
-            List<int> nonBasicVariableIndices = new List<int>();
 
-            // Collect the indices of non-basic variables (i.e., columns not part of the identity matrix)
-            for (int j = 0; j < totalVariables; j++)
+            int rows = CanonicalForm(false).GetLength(0); // Number of rows
+            int columns = CanonicalForm(false).GetLength(1); // Number of columns
+
+            // Loop through each column
+            for (int col = 0; col < columns; col++)
             {
-                bool isNonBasic = true;
-                for (int i = 0; i < numberOfConstraints; i++)
+                int zeroCount = 0;
+                int oneCount = 0;
+
+
+                // Loop through each row in the current column
+                for (int row = 0; row < rows; row++)
                 {
-                    if (MaxConstraintMatrix[i, j] == 1.0)
+                    if (CanonicalForm(false)[row, col] == 0)
                     {
-                        isNonBasic = false;
-                        break;
+                        zeroCount++;
                     }
+                    else if (CanonicalForm(false)[row, col] == 1)
+                    {
+                        oneCount++;
+                    }
+
                 }
-                if (isNonBasic)
+
+                if (zeroCount != rows - 1 && oneCount != 1)
                 {
-                    nonBasicVariableIndices.Add(j);
+                    nonBasicVariablePos.Add(col);
                 }
             }
 
-            // Create the non-basic variable matrix
-            double[,] nonBasicMatrix = new double[numberOfConstraints + 1, nonBasicVariableIndices.Count + 1];
-
-            for (int i = 0; i < numberOfConstraints + 1; i++)
-            {
-                for (int j = 0; j < nonBasicVariableIndices.Count; j++)
-                {
-                    nonBasicMatrix[i, j] = CanonicalForm(false)[i, nonBasicVariableIndices[j]];
-                }
-                nonBasicMatrix[i, nonBasicVariableIndices.Count] = CanonicalForm(false)[i, totalVariables];
-            }
-
-            return nonBasicMatrix;
+            return nonBasicVariablePos;
         }
-        public double[,] basicVariableMatrix()
+        public List<int> BasicVariablePos()
         {
-            int numberOfConstraints = NumberOfMaxConstraints + NumberOfMinConstraints;
-            int totalVariables = NumberOfVariables + numberOfConstraints; // Decision variables + Slack/excess variables
+            List<int> basicVariablePos = new List<int>();
 
-            List<int> basicVariableIndices = new List<int>();
 
-            // Collect the indices of basic variables (i.e., columns forming the identity matrix)
-            for (int j = 0; j < totalVariables; j++)
+            int rows = CanonicalForm(false).GetLength(0); // Number of rows
+            int columns = CanonicalForm(false).GetLength(1); // Number of columns
+
+            // Loop through each column
+            for (int col = 0; col < columns; col++)
             {
-                bool isBasic = true;
-                for (int i = 0; i < numberOfConstraints; i++)
+                int zeroCount = 0;
+                int oneCount = 0;
+
+
+                // Loop through each row in the current column
+                for (int row = 0; row < rows; row++)
                 {
-                    if (i == j)
+                    if (CanonicalForm(false)[row, col] == 0)
                     {
-                        if (MaxConstraintMatrix[i, j] != 1.0)
-                        {
-                            isBasic = false;
-                            break;
-                        }
+                        zeroCount++;
                     }
-                    else if (MaxConstraintMatrix[i, j] != 0.0)
+                    else if (CanonicalForm(false)[row, col] == 1)
                     {
-                        isBasic = false;
-                        break;
+                        oneCount++;
                     }
+                    
                 }
-                if (isBasic)
+
+                if (zeroCount == rows - 1 && oneCount == 1)
                 {
-                    basicVariableIndices.Add(j);
+                    basicVariablePos.Add(col);
                 }
             }
 
-            // Create the basic variable matrix
-            double[,] basicMatrix = new double[numberOfConstraints + 1, basicVariableIndices.Count + 1];
-
-            for (int i = 0; i < numberOfConstraints + 1; i++)
-            {
-                for (int j = 0; j < basicVariableIndices.Count; j++)
-                {
-                    basicMatrix[i, j] = CanonicalForm(false)[i, basicVariableIndices[j]];
-                }
-                basicMatrix[i, basicVariableIndices.Count] = CanonicalForm(false)[i, totalVariables];
-            }
-
-            return basicMatrix;
+            return basicVariablePos;
         }
+
+
     }
+
 }

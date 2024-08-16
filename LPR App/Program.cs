@@ -44,16 +44,62 @@ namespace LPR_App
 
             Algorithms.BranchBoundKnapsack(value,weight , weightLimit);
 
-            double[,] tableau = model.MaxConstraintMatrix;
+            TableauModel initialModel = new TableauModel(A, b, c);
+            initialModel.ToConsole("Initial Tableau:", true);
 
-            double[] result = Algorithms.GetNonBasicVariableRange(tableau, model.NumberOfVariables, model.NumberOfMaxConstraints, 0);
+            model.ToConsole("Optimal Solution:", false);
+            Console.WriteLine();
 
-            Console.WriteLine($"Allowable Increase: {result[0]}");
-            Console.WriteLine($"Allowable Decrease: {result[1]}");
+            double[] cbv = SensitivityAnalysis.GetCBV(initialModel, model);
+            Console.WriteLine("====");
+            Console.WriteLine("CBV:");
+            Console.WriteLine("====");
+            foreach (var item in cbv)
+            {
+                Console.Write(item+"\t");
+            }
+            Console.WriteLine();
+            double[,] B = SensitivityAnalysis.GetB(initialModel, model);
+            Console.WriteLine("==");
+            Console.WriteLine("B:");
+            Console.WriteLine("==");
+            for (int i = 0; i < B.GetLength(0); i++)
+            {
+                for (int j = 0; j < B.GetLength(1); j++)
+                {
+                    Console.Write(B[i,j] + "\t");
+                }
+                Console.WriteLine();
+            }
+            double[,] BInverse = SensitivityAnalysis.GetBInverse(initialModel, model);
+            Console.WriteLine("==========");
+            Console.WriteLine("B Inverse:");
+            Console.WriteLine("==========");
+            for (int i = 0; i < BInverse.GetLength(0); i++)
+            {
+                for (int j = 0; j < BInverse.GetLength(1); j++)
+                {
+                    Console.Write(BInverse[i, j] + "\t");
+                }
+                Console.WriteLine();
+            }
+            
+
+            double[] cbvDotB = SensitivityAnalysis.GetDotProduct(initialModel, model);
+            Console.WriteLine("================");
+            Console.WriteLine("CBV * B Inverse:");
+            Console.WriteLine("================");
+            foreach (var item in cbvDotB)
+            {
+                Console.Write(item + "\t");
+            }
+            Console.WriteLine();
+
 
             Console.ReadLine();
 
         }
+        
     }
 }
 

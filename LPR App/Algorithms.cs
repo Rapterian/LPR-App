@@ -743,49 +743,7 @@ namespace LPR_App
             }
         }
 
-        public static double[] GetNonBasicVariableRange(double[,] tableau, int numOfVariables, int numOfConstraints, int nonBasicVariableIndex)
-        {
-            // Convert the tableau into a matrix
-            var tableauMatrix = Matrix<double>.Build.DenseOfArray(tableau);
-
-            // Extract the coefficients of the objective function
-            var objectiveRow = tableauMatrix.Row(0).SubVector(0, numOfVariables);
-
-            // Extract the relevant sub-matrix for the constraints
-            var B = tableauMatrix.SubMatrix(1, numOfConstraints, numOfVariables, numOfConstraints);
-
-            // Calculate B^-1
-            var invB = B.Inverse();
-
-            // Get the column corresponding to the non-basic variable
-            var nonBasicColumn = tableauMatrix.SubMatrix(1, numOfConstraints, nonBasicVariableIndex, 1).Column(0);
-
-            // Calculate the range for the non-basic variable
-            var product = invB * nonBasicColumn;
-
-            double minRatioPositive = double.PositiveInfinity;
-            double minRatioNegative = double.PositiveInfinity;
-
-            for (int i = 0; i < product.Count; i++)
-            {
-                double ratio = objectiveRow[nonBasicVariableIndex] / product[i];
-
-                if (product[i] > 0)
-                {
-                    minRatioPositive = Math.Min(minRatioPositive, ratio);
-                }
-                else if (product[i] < 0)
-                {
-                    minRatioNegative = Math.Min(minRatioNegative, -ratio);
-                }
-            }
-
-            
-            double[] result = { minRatioPositive, minRatioNegative };
-
-            return result;
-        }
-
+        
 
     }
 }
