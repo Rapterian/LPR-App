@@ -121,7 +121,7 @@ namespace LPR_App
                           };
 
             double[] b = { 0, 4, 5, 6 };
-            double[] c = { 3, 2 };
+            double[] c = { -3, -2 };
 
             //double[,] solution = Algorithms.PrimalSimplex(A, b, c);
             //Algorithms.displayTableau(solution, c.Length, b.Length-1, "Optimal Solution:");
@@ -130,6 +130,19 @@ namespace LPR_App
             TableauModel model = new TableauModel(A, b, c);
             model = Algorithms.PrimalSimplex(model);
             model.ToConsole("Optimal Solution:", false);
+
+            //Primal simplex revised
+            double[,] D = {
+                { 8, 6, 1 },
+                { 4, 2, 1.5 },
+                { 2, 1.5, 0.5 }
+              };
+
+            double[] e = { 0, 48, 20, 8 };
+            double[] f = { 60, 30, 20 };
+            TableauModel anotherModel = new TableauModel(D, e, f);
+            anotherModel = Algorithms.PrimalSimplexRevised(anotherModel);
+            anotherModel.ToConsole("Optimal Solution:", false);
 
             //Cutting Plane Simplex
             Algorithms.CuttingPlane(A, b, c);

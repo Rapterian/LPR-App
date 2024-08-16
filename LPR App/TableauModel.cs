@@ -139,7 +139,7 @@ namespace LPR_App
                 //Objective Function Row
                 for (int j = 0; j < NumberOfVariables; j++)
                 {
-                    tableau[0, j] = -ObjectiveFunction[j];//make the z row variables negative
+                    tableau[0, j] = ObjectiveFunction[j];//make the z row variables negative
                 }
 
                 tableau[0, NumberOfVariables + numberOfConstraints] = RightHandSide[0];//Objective Function Row RHS
@@ -248,7 +248,7 @@ namespace LPR_App
 
 
             int rows = CanonicalForm(false).GetLength(0); // Number of rows
-            int columns = CanonicalForm(false).GetLength(1); // Number of columns
+            int columns = CanonicalForm(false).GetLength(1)-1; // Number of columns
 
             // Loop through each column
             for (int col = 0; col < columns; col++)
@@ -267,11 +267,48 @@ namespace LPR_App
                     else if (CanonicalForm(false)[row, col] == 1)
                     {
                         oneCount++;
+                      }
+
+                }
+
+                if (zeroCount != rows - 1 || oneCount != 1)
+                {
+                    nonBasicVariablePos.Add(col);
+                }
+            }
+
+            return nonBasicVariablePos;
+        }
+        public List<int> nonBasicVariablePos(bool initialTableau)
+        {
+            List<int> nonBasicVariablePos = new List<int>();
+
+
+            int rows = CanonicalForm(initialTableau).GetLength(0); // Number of rows
+            int columns = CanonicalForm(initialTableau).GetLength(1) - 1; // Number of columns
+
+            // Loop through each column
+            for (int col = 0; col < columns; col++)
+            {
+                int zeroCount = 0;
+                int oneCount = 0;
+
+
+                // Loop through each row in the current column
+                for (int row = 0; row < rows; row++)
+                {
+                    if (CanonicalForm(initialTableau)[row, col] == 0)
+                    {
+                        zeroCount++;
+                    }
+                    else if (CanonicalForm(initialTableau)[row, col] == 1)
+                    {
+                        oneCount++;
                     }
 
                 }
 
-                if (zeroCount != rows - 1 && oneCount != 1)
+                if (zeroCount != rows - 1 || oneCount != 1)
                 {
                     nonBasicVariablePos.Add(col);
                 }
@@ -285,7 +322,7 @@ namespace LPR_App
 
 
             int rows = CanonicalForm(false).GetLength(0); // Number of rows
-            int columns = CanonicalForm(false).GetLength(1); // Number of columns
+            int columns = CanonicalForm(false).GetLength(1)-1; // Number of columns
 
             // Loop through each column
             for (int col = 0; col < columns; col++)
@@ -306,6 +343,44 @@ namespace LPR_App
                         oneCount++;
                     }
                     
+                }
+
+                if (zeroCount == rows - 1 && oneCount == 1)
+                {
+                    basicVariablePos.Add(col);
+                }
+            }
+
+            return basicVariablePos;
+        }
+
+        public List<int> BasicVariablePos(bool initialTableau)
+        {
+            List<int> basicVariablePos = new List<int>();
+
+
+            int rows = CanonicalForm(initialTableau).GetLength(0); // Number of rows
+            int columns = CanonicalForm(initialTableau).GetLength(1) - 1; // Number of columns
+
+            // Loop through each column
+            for (int col = 0; col < columns; col++)
+            {
+                int zeroCount = 0;
+                int oneCount = 0;
+
+
+                // Loop through each row in the current column
+                for (int row = 0; row < rows; row++)
+                {
+                    if (CanonicalForm(initialTableau)[row, col] == 0)
+                    {
+                        zeroCount++;
+                    }
+                    else if (CanonicalForm(initialTableau)[row, col] == 1)
+                    {
+                        oneCount++;
+                    }
+
                 }
 
                 if (zeroCount == rows - 1 && oneCount == 1)
