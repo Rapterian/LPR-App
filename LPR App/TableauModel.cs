@@ -316,7 +316,39 @@ namespace LPR_App
 
             return basicVariablePos;
         }
+        public TableauModel GetDualTableau()
+        {
+            // Number of primal constraints becomes the number of dual variables and vice versa
+            int numDualVariables = NumberOfMaxConstraints + NumberOfMinConstraints;
+            int numDualConstraints = NumberOfVariables;
 
+            // Transpose the constraint matrix
+            double[,] dualMaxConstraintMatrix = new double[numDualConstraints, numDualVariables];
+            double[,] dualMinConstraintMatrix = new double[numDualConstraints, numDualVariables];
+
+            for (int i = 0; i < numDualConstraints; i++)
+            {
+                for (int j = 0; j < NumberOfMaxConstraints; j++)
+                {
+                    dualMaxConstraintMatrix[i, j] = MaxConstraintMatrix[j, i];
+                }
+                for (int j = 0; j < NumberOfMinConstraints; j++)
+                {
+                    dualMinConstraintMatrix[i, j] = MinConstraintMatrix[j, i];
+                }
+            }
+
+            // The dual's right-hand side becomes the primal's objective function
+            double[] dualRightHandSide = new double[numDualConstraints];
+            Array.Copy(ObjectiveFunction, dualRightHandSide, numDualConstraints);
+
+            // The dual's objective function coefficients are the right-hand side values of the primal
+            double[] dualObjectiveFunction = new double[numDualVariables];
+            Array.Copy(RightHandSide, 1, dualObjectiveFunction, 0, numDualVariables); // Skip the first value as it's usually related to the primal objective function.
+
+            // Create and return the dual tableau
+            return new TableauModel(dualMaxConstraintMatrix, dualMinConstraintMatrix, dualRightHandSide, dualObjectiveFunction);
+        }
 
     }
 

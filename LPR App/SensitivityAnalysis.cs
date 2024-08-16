@@ -11,6 +11,12 @@ namespace LPR_App
 {
     public static class SensitivityAnalysis
     {
+        public enum DualityType
+        {
+            StrongDuality,
+            WeakDuality,
+            NoDuality // This should theoretically never happen in a well-posed LP problem
+        }
         public static double[] GetCBV(TableauModel initialTableau, TableauModel optimalTableau)
         {
             var basicVariablePositions = optimalTableau.BasicVariablePos();
@@ -180,6 +186,8 @@ namespace LPR_App
 
             return newObjectiveCoefficient;
         }
+
+
         public static double[] CalculateConstraintCoefficientColumn(TableauModel initialTableau, TableauModel optimalTableau, int constraintIndex, int variableIndex, double newCoefficient)
         {
 
@@ -306,6 +314,76 @@ namespace LPR_App
 
             return Algorithms.PrimalSimplex(new TableauModel(newTableau, optimalTableau.NumberOfVariables, optimalTableau.NumberOfMaxConstraints, optimalTableau.NumberOfMinConstraints)).CanonicalForm(false);
         }
+
+        public static double[] rangeObjectiveCoefficient(TableauModel initialTableau, TableauModel optimalTableau, int variableIndex, double newCoefficient, bool isBasic)
+        {
+            double upperBound = double.PositiveInfinity;
+            double lowerBound = double.NegativeInfinity;
+
+            // Get the current CBV, B inverse, and the A_i column
+            double[] cbv = GetCBV(initialTableau, optimalTableau);
+            double[,] BInverse = GetBInverse(initialTableau, optimalTableau);
+            int numberOfConstraints = optimalTableau.NumberOfConstraints();
+
+            // Extract the A_i column from the initial tableau
+            double[] Ai = new double[numberOfConstraints];
+            for (int i = 0; i < numberOfConstraints; i++)
+            {
+                Ai[i] = initialTableau.CanonicalForm(true)[i + 1, variableIndex];
+            }
+
+            // Convert BInverse and Ai into MathNet vectors/matrices
+            var BInverseMatrix = Matrix<double>.Build.DenseOfArray(BInverse);
+            var AiVector = Vector<double>.Build.DenseOfArray(Ai);
+
+            // Calculate CBV * B-1 * Ai
+            var cbvVector = Vector<double>.Build.DenseOfArray(cbv);
+            var result = cbvVector * BInverseMatrix * AiVector;
+
+            double originalCoefficient = initialTableau.CanonicalForm(true)[0, variableIndex];
+            double coefficientDifference = newCoefficient - originalCoefficient;
+
+            if (isBasic)
+            {
+                // For basic variables, we need to adjust CBV and calculate new bounds
+
+                // Calculate the new Si (reduced cost vector)
+                var changedCBV = ChangeCBV(initialTableau, optimalTableau, variableIndex, newCoefficient);
+                var Si = GetSi(initialTableau, optimalTableau, changedCBV);
+
+                // Determine the upper and lower bounds by analyzing the impact of the change on all other variables
+                for (int j = 0; j < Si.Length; j++)
+                {
+                    if (Si[j] < 0)
+                    {
+                        double ratio = -cbv[j] / Si[j];
+                        upperBound = Math.Min(upperBound, ratio);
+                    }
+                    else if (Si[j] > 0)
+                    {
+                        double ratio = -cbv[j] / Si[j];
+                        lowerBound = Math.Max(lowerBound, ratio);
+                    }
+                }
+            }
+            else
+            {
+                // For non-basic variables, simply determine the impact of the coefficient change
+                double delta = coefficientDifference;
+
+                if (result - delta < 0)
+                {
+                    upperBound = coefficientDifference + result;
+                }
+                else
+                {
+                    lowerBound = coefficientDifference - result;
+                }
+            }
+
+            return new double[] { lowerBound, upperBound };
+        }
+
         public static double[,] changeConstraintCoefficient(TableauModel initialTableau, TableauModel optimalTableau, int constraintIndex, int variableIndex, double newCoefficient)
         {
             double[,] newTableau = optimalTableau.CanonicalForm(false).Clone() as double[,];
@@ -319,6 +397,57 @@ namespace LPR_App
             }
 
             return Algorithms.PrimalSimplex(new TableauModel(newTableau, optimalTableau.NumberOfVariables, optimalTableau.NumberOfMaxConstraints, optimalTableau.NumberOfMinConstraints)).CanonicalForm(false);
+        }
+
+        public static double[] rangeConstraintCoefficient(TableauModel initialTableau, TableauModel optimalTableau, int constraintIndex, int variableIndex, double newCoefficient)
+        {
+            double upperBound = double.PositiveInfinity;
+            double lowerBound = double.NegativeInfinity;
+
+            int numberOfConstraints = optimalTableau.NumberOfConstraints();
+            int numberOfVariables = optimalTableau.NumberOfVariables;
+
+            // Get the current basis inverse matrix (B-1) and the right-hand side (b) from the optimal tableau
+            double[,] BInverse = GetBInverse(initialTableau, optimalTableau);
+            double[] rhs = new double[numberOfConstraints];
+            for (int i = 0; i < numberOfConstraints; i++)
+            {
+                rhs[i] = optimalTableau.CanonicalForm(true)[i + 1, 0];  // The right-hand side values in the tableau
+            }
+
+            // Calculate the current value of the tableau entry
+            double currentCoefficient = initialTableau.CanonicalForm(true)[constraintIndex + 1, variableIndex];
+            double coefficientDifference = newCoefficient - currentCoefficient;
+
+            // Modify the A matrix to reflect the new coefficient
+            double[] modifiedAi = new double[numberOfConstraints];
+            for (int i = 0; i < numberOfConstraints; i++)
+            {
+                modifiedAi[i] = initialTableau.CanonicalForm(true)[i + 1, variableIndex];
+            }
+            modifiedAi[constraintIndex] = newCoefficient;
+
+            // Compute the impact on the right-hand side (b')
+            var BInverseMatrix = Matrix<double>.Build.DenseOfArray(BInverse);
+            var modifiedAiVector = Vector<double>.Build.DenseOfArray(modifiedAi);
+            var bPrime = BInverseMatrix * modifiedAiVector;
+
+            // Analyze the effect on the feasibility by checking each element of b'
+            for (int i = 0; i < bPrime.Count; i++)
+            {
+                if (bPrime[i] < 0)
+                {
+                    double ratio = -rhs[i] / bPrime[i];
+                    upperBound = Math.Min(upperBound, ratio);
+                }
+                else if (bPrime[i] > 0)
+                {
+                    double ratio = -rhs[i] / bPrime[i];
+                    lowerBound = Math.Max(lowerBound, ratio);
+                }
+            }
+
+            return new double[] { lowerBound, upperBound };
         }
         public static double[,] changeRHSvalues(TableauModel initialTableau, TableauModel optimalTableau, int rhsIndex, double newRHS)
         {
@@ -355,6 +484,53 @@ namespace LPR_App
                 newRHScolumn[i] = b[i - 1];
             }
             return newRHScolumn;
+        }
+
+        public static double[] rangeRHS(TableauModel initialTableau, TableauModel optimalTableau, int constraintIndex)
+        {
+            double upperBound = double.PositiveInfinity;
+            double lowerBound = double.NegativeInfinity;
+
+            int numberOfConstraints = optimalTableau.NumberOfConstraints();
+
+            // Get the current basis inverse matrix (B-1) from the optimal tableau
+            double[,] BInverse = GetBInverse(initialTableau, optimalTableau);
+
+            // Get the right-hand side vector (b) from the optimal tableau
+            double[] rhs = new double[numberOfConstraints];
+            for (int i = 0; i < numberOfConstraints; i++)
+            {
+                rhs[i] = optimalTableau.CanonicalForm(true)[i + 1, 0];  // The right-hand side values in the tableau
+            }
+
+            // Extract the row of B-1 that corresponds to the constraint we are interested in
+            double[] bRow = new double[numberOfConstraints];
+            for (int j = 0; j < numberOfConstraints; j++)
+            {
+                bRow[j] = BInverse[constraintIndex, j];
+            }
+
+            // Calculate the effect of changing the RHS on the current basic feasible solution
+            for (int i = 0; i < bRow.Length; i++)
+            {
+                if (bRow[i] > 0)
+                {
+                    double ratio = rhs[i] / bRow[i];
+                    upperBound = Math.Min(upperBound, ratio);
+                }
+                else if (bRow[i] < 0)
+                {
+                    double ratio = rhs[i] / bRow[i];
+                    lowerBound = Math.Max(lowerBound, ratio);
+                }
+            }
+
+            // Convert back the lower and upper bounds based on the original RHS
+            double originalRHS = initialTableau.CanonicalForm(true)[constraintIndex + 1, 0];
+            lowerBound = originalRHS - lowerBound;
+            upperBound = originalRHS - upperBound;
+
+            return new double[] { lowerBound, upperBound };
         }
 
         public static double[,] addActivity(TableauModel initialTableau, TableauModel optimalTableau, double variableCoefficient, double[] variableConstraintColumn)
@@ -449,6 +625,31 @@ namespace LPR_App
         {
             var basicVariablePositions = optimalTableau.BasicVariablePos();
             return basicVariablePositions.Contains(variableIndex);
+        }
+
+        public static DualityType CheckDuality(TableauModel initialTableau, TableauModel optimalTableau)
+        {
+
+            // Calculate the optimal objective value for the primal problem
+            double primalOptimalValue = optimalTableau.CanonicalForm(false)[0, optimalTableau.NumberOfVariables + optimalTableau.NumberOfConstraints()];
+
+            // Calculate the optimal objective value for the dual problem
+            double dualOptimalValue = initialTableau.GetDualTableau().CanonicalForm(false)[0, initialTableau.NumberOfVariables + initialTableau.NumberOfConstraints()];
+
+            // Check for strong duality (optimal objective values are equal)
+            if (Math.Abs(primalOptimalValue - dualOptimalValue) < 1e-6) // Tolerance for floating-point comparison
+            {
+                return DualityType.StrongDuality;
+            }
+            // If strong duality doesn't hold, weak duality always does, as long as the problems are feasible
+            else if (primalOptimalValue < dualOptimalValue)
+            {
+                return DualityType.WeakDuality;
+            }
+
+            // If the primal objective is greater than the dual (which shouldn't happen if both problems are feasible)
+            // return NoDuality. This is a fallback check for completeness.
+            return DualityType.NoDuality;
         }
     }
 }
