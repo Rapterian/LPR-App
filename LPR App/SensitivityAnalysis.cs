@@ -363,7 +363,7 @@ namespace LPR_App
                     }
                     else
                     {
-                        newTableau[0, j] = CalculateNewObjectiveCoefficient(initialTableau, optimalTableau, j, initialTableau.CanonicalForm(true)[0, -j], changedCBV);
+                        newTableau[0, j] = CalculateNewObjectiveCoefficient(initialTableau, optimalTableau, j, initialTableau.CanonicalForm(true)[0, j], changedCBV);
                     }
                 }
                 for (int j = optimalTableau.NumberOfVariables; j < optimalTableau.NumberOfConstraints(); j++)
@@ -381,7 +381,7 @@ namespace LPR_App
 
 
 
-            return Algorithms.PrimalSimplex(new TableauModel(newTableau, optimalTableau.NumberOfVariables, optimalTableau.NumberOfMaxConstraints, optimalTableau.NumberOfMinConstraints)).CanonicalForm(false);
+            return Algorithms.PrimalSimplex(new TableauModel(newTableau, optimalTableau.NumberOfVariables, optimalTableau.NumberOfMaxConstraints, optimalTableau.NumberOfMinConstraints),false).CanonicalForm(false);
         }
 
         public static double[] rangeObjectiveCoefficient(TableauModel initialTableau, TableauModel optimalTableau, int variableIndex, bool isBasic)
@@ -426,12 +426,12 @@ namespace LPR_App
                     if (Si[j] < 0)
                     {
                         double ratio = -cbv[j] / Si[j];
-                        upperBound = Math.Min(upperBound, ratio);
+                        upperBound = Math.Max(upperBound, ratio);
                     }
                     else if (Si[j] > 0)
                     {
                         double ratio = -cbv[j] / Si[j];
-                        lowerBound = Math.Max(lowerBound, ratio);
+                        lowerBound = Math.Min(lowerBound, ratio);
                     }
                 }
             }
@@ -465,7 +465,7 @@ namespace LPR_App
                 newTableau[i, variableIndex] = newConstraintColumn[i];
             }
 
-            return Algorithms.PrimalSimplex(new TableauModel(newTableau, optimalTableau.NumberOfVariables, optimalTableau.NumberOfMaxConstraints, optimalTableau.NumberOfMinConstraints)).CanonicalForm(false);
+            return Algorithms.PrimalSimplex(new TableauModel(newTableau, optimalTableau.NumberOfVariables, optimalTableau.NumberOfMaxConstraints, optimalTableau.NumberOfMinConstraints), false).CanonicalForm(false);
         }
 
         public static double[] rangeConstraintCoefficient(TableauModel initialTableau, TableauModel optimalTableau, int constraintIndex, int variableIndex)
@@ -535,7 +535,7 @@ namespace LPR_App
             {
                 newTableau[i, optimalTableau.NumberOfConstraints() + optimalTableau.NumberOfVariables] = b[i - 1];
             }
-            return Algorithms.PrimalSimplex(new TableauModel(newTableau, optimalTableau.NumberOfVariables, optimalTableau.NumberOfMaxConstraints, optimalTableau.NumberOfMinConstraints)).CanonicalForm(false);
+            return Algorithms.PrimalSimplex(new TableauModel(newTableau, optimalTableau.NumberOfVariables, optimalTableau.NumberOfMaxConstraints, optimalTableau.NumberOfMinConstraints), false).CanonicalForm(false);
         }
         public static double[] changeRHSvalues(TableauModel initialTableau, TableauModel optimalTableau, double[] CBV)
         {
@@ -630,7 +630,7 @@ namespace LPR_App
                 newTableau[i, newVariableColumnIndex] = newVariableConstraintColumn[i];
             }
 
-            return Algorithms.PrimalSimplex(new TableauModel(newTableau, optimalTableau.NumberOfVariables, optimalTableau.NumberOfMaxConstraints, optimalTableau.NumberOfMinConstraints)).CanonicalForm(false);
+            return Algorithms.PrimalSimplex(new TableauModel(newTableau, optimalTableau.NumberOfVariables, optimalTableau.NumberOfMaxConstraints, optimalTableau.NumberOfMinConstraints), false).CanonicalForm(false);
         }
         public static double[,] addConstraint(TableauModel initialTableau, TableauModel optimalTableau, double[] constraintCoefficients, double constraintRHS)
         {
@@ -703,7 +703,8 @@ namespace LPR_App
             double primalOptimalValue = optimalTableau.CanonicalForm(false)[0, optimalTableau.NumberOfVariables + optimalTableau.NumberOfConstraints()];
 
             // Calculate the optimal objective value for the dual problem
-            double dualOptimalValue = initialTableau.GetDualTableau().CanonicalForm(false)[0, initialTableau.NumberOfVariables + initialTableau.NumberOfConstraints()];
+            TableauModel dualTableau = initialTableau.GetDualTableau();
+            double dualOptimalValue = dualTableau.CanonicalForm(true)[0, initialTableau.NumberOfVariables + initialTableau.NumberOfConstraints()];
 
             // Check for strong duality (optimal objective values are equal)
             if (Math.Abs(primalOptimalValue - dualOptimalValue) < 1e-6) // Tolerance for floating-point comparison
