@@ -18,7 +18,7 @@ namespace LPR_App
 
         public string ToString()
         {
-            return Name + "\t|" + IsSelected + "\t|" + Weight + "\t|" + Value+"\t|"+Locked;
+            return Name + "\t|" + Math.Round(IsSelected, 3) + "\t|" + Math.Round(Weight, 3) + "\t|" + Math.Round(Value, 3) + "\t|"+Locked;
         }
     }
 }

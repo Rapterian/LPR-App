@@ -91,8 +91,8 @@ namespace LPR_App
             RightHandSide = rightHandSide;
             ObjectiveFunction = objectiveFunction;
             NumberOfVariables = numberOfVariables;
-            NumberOfMaxConstraints = numberOfConstraints;
-            NumberOfMinConstraints = numberOfConstraints;
+            NumberOfMaxConstraints = numberOfMaxConstraints;
+            NumberOfMinConstraints = numberOfMinConstraints;
         }
 
         public TableauModel(double[,] matrix, int numberOfVariables, int numberOfConstraints)
@@ -139,7 +139,7 @@ namespace LPR_App
                 //Objective Function Row
                 for (int j = 0; j < NumberOfVariables; j++)
                 {
-                    tableau[0, j] = ObjectiveFunction[j];//make the z row variables negative
+                    tableau[0, j] = -ObjectiveFunction[j];//make the z row variables negative
                 }
 
                 tableau[0, NumberOfVariables + numberOfConstraints] = RightHandSide[0];//Objective Function Row RHS
@@ -226,11 +226,24 @@ namespace LPR_App
                 s++;
             }
             Console.WriteLine("RHS");
+            Console.WriteLine("----------------------------------------------");
             for (int i = 0; i < NumberOfMaxConstraints + 1; i++)
             {
                 for (int j = 0; j < NumberOfMaxConstraints + NumberOfVariables + 1; j++)
                 {
-                    Console.Write(CanonicalForm(initialTableau)[i, j] + " \t");
+                    double value = CanonicalForm(initialTableau)[i, j];
+
+                    if (value != 0)
+                    {
+                        double roundedValue = Math.Round(value, 3);
+                        Console.Write(roundedValue + " \t");
+                    }
+                    else
+                    {
+                        
+                        Console.Write("0" + " \t");
+                    }
+                    
                 }
                 Console.WriteLine("");
             }

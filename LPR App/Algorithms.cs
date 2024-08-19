@@ -23,15 +23,12 @@ namespace LPR_App
         //    FileHandling.WriteToFile(fileName, output);
         //}
 
-        public static TableauModel PrimalSimplex(TableauModel tableau)
+        public static TableauModel PrimalSimplex(TableauModel tableau ,bool basic)
         {
-            if (tableau.NumberOfMinConstraints != 0)
-            {
-                throw new Exception("Primal Simplex only works with maximization problems");
-            }
+            
             int numberOfConstraints = tableau.NumberOfMaxConstraints;
             int numberOfVariables = tableau.NumberOfVariables;
-            double[,] tableauC = tableau.CanonicalForm(true);
+            double[,] tableauC = tableau.CanonicalForm(basic);
             int iteration = 0;
             while (true)
             {
@@ -41,22 +38,27 @@ namespace LPR_App
 
                 for (int j = 0; j < numberOfVariables + numberOfConstraints; j++)//go through each column (number of variables + number of constraints to include slack variables)
                 {
-                    if (tableauC[0, j] < 0)
+                    if(pivotColumn == -1)
                     {
-                        pivotColumn = j;
-                        break;
+                        if (tableauC[0, j] < 0)
+                        {
+                            pivotColumn = j;
+
+                        }
                     }
+                    else
+                    {
+                        if (tableauC[0, j] < tableauC[0, pivotColumn])
+                        {
+                            pivotColumn = j;
+
+                        }
+                    }
+                    
                 }
 
                 if (pivotColumn == -1) break;//Optimal
 
-                for (int j = 0; j < numberOfVariables + numberOfConstraints; j++)//go through each column (number of variables + number of constraints to include slack variables)
-                {
-                    if (tableauC[0, j] < tableauC[0, pivotColumn])
-                    {
-                        pivotColumn = j;
-                    }
-                }
                 TableauModel tableauIteration = new TableauModel(tableauC, numberOfVariables, numberOfConstraints);
                 tableauIteration.ToConsole($"Iteration {iteration}", false);
 
@@ -483,7 +485,7 @@ namespace LPR_App
             // performing primal simplex
             TableauModel model = new TableauModel(constraintMatrix, RHS, stCoefficients);
             model.ToConsole("Initial Tableau", true);
-            model = PrimalSimplex(model);
+            model = PrimalSimplex(model,true);
             model.ToConsole("Primal Simplex Optimal Solution", false);
 
             Console.WriteLine();
@@ -593,6 +595,11 @@ namespace LPR_App
                 }
 
                 branches = branchesWithSubProblems;
+            }
+
+            for (int i = 0; i < branches.Count-1; i++)
+            {
+                displayKnapsackTable(branches.Keys.ElementAt(i));
             }
 
         }
@@ -1090,7 +1097,7 @@ namespace LPR_App
             Console.WriteLine("First, we must find the optimal table using the Primal Simplex Algorithm");
             TableauModel model = new TableauModel(constraintMatrix, RHS, stCoefficients);
             model.ToConsole("Initial Tableau", true);
-            model = PrimalSimplex(model);
+            model = PrimalSimplex(model, true);
             model.ToConsole("Primal Simplex Optimal Solution", false);
 
             double[,] primalOptimal = model.CanonicalForm(false);
